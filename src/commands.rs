@@ -1,3 +1,4 @@
+use std::cmp;
 use std::fs::{self, File};
 use std::io::{self, Write};
 use failure;
@@ -50,6 +51,7 @@ impl Command {
             Jump { address } => Self::jump(ed, address),
             Print { start, end } => Self::print(ed, start, end),
             Numbered { start, end } => Self::numbered(ed, start, end),
+            Delete { start, end } => Self::delete(ed, start, end),
             Write { start, end, file } => Self::write(ed, start, end, file),
             Insert { before } => Self::insert(ed, before),
             Append { after } => Self::append(ed, after),
@@ -116,6 +118,55 @@ impl Command {
         Self::write_range(handle, ed, start, end, true)
     }
 
+    fn delete(ed: &mut Red, start: Option<Address>, end: Option<Address>) -> Result<Action, failure::Error> {
+        if ed.data.is_empty() {
+            return Err(format_err!("Invalid address"))
+        }
+
+        match (start, end) {
+            (None, None) => {
+                let line = ed.current_line;
+                ed.data.remove(line-1);
+                ed.dirty = true;
+                ed.total_lines = ed.data.len();
+                ed.current_line = cmp::min(line, ed.data.len());
+            },
+
+            (Some(start), None) => {
+                let line = Self::get_actual_line(&ed, start)?;
+                ed.data.remove(line-1);
+                ed.dirty = true;
+                ed.total_lines = ed.data.len();
+                ed.current_line = cmp::min(line, ed.data.len());
+            }
+
+            (None, Some(end)) => {
+                let end = Self::get_actual_line(&ed, end)?;
+
+                for line in 1..=end {
+                    ed.data.remove(line-1);
+                }
+
+                ed.dirty = true;
+                ed.total_lines = ed.data.len();
+                ed.current_line = cmp::min(end, ed.data.len());
+            }
+
+            (Some(start), Some(end)) => {
+                let start = Self::get_actual_line(&ed, start)?;
+                let end = Self::get_actual_line(&ed, end)?;
+
+                for line in start..=end {
+                    ed.data.remove(start-1);
+                }
+
+                ed.dirty = true;
+                ed.total_lines = ed.data.len();
+                ed.current_line = cmp::min(start, ed.data.len());
+            }
+        }
+        Ok(Action::Continue)
+    }
 
     fn write(ed: &mut Red, mut start: Option<Address>, mut end: Option<Address>, file: Option<String>)
         -> Result<Action, failure::Error> {
