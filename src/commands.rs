@@ -66,7 +66,10 @@ impl Command {
         }
     }
 
-    fn help(_ed: &mut Red) -> Result<Action, failure::Error> {
+    fn help(ed: &mut Red) -> Result<Action, failure::Error> {
+        if let Some(error) = ed.last_error.as_ref() {
+            println!("{}", error);
+        }
         Ok(Action::Continue)
     }
 
@@ -78,11 +81,17 @@ impl Command {
         use self::Address::*;
         match addr {
             CurrentLine => { /* Don't jump at all */ },
-            LastLine    => ed.current_line = ed.total_lines,
-            Numbered(n) => ed.current_line = n,
+            LastLine    => {
+                let new_line = ed.total_lines;
+                ed.set_line(new_line)?
+            },
+            Numbered(n) => ed.set_line(n)?,
             Offset(n)   => {
-                let current = ed.current_line as isize + n;
-                ed.current_line = current as usize;
+                let new_line = ed.current_line as isize + n;
+                if new_line < 1 {
+                    return Err(format_err!("Invalid address"))
+                }
+                ed.set_line(new_line as usize)?;
             },
         }
 
@@ -131,7 +140,7 @@ impl Command {
     }
 
     fn insert(ed: &mut Red, before: Option<Address>) -> Result<Action, failure::Error> {
-        let mut addr = before.map(|addr| Self::get_actual_line(&ed, addr)).unwrap_or(ed.current_line);
+        let mut addr = before.map(|addr| Self::get_actual_line(&ed, addr)).unwrap_or(Ok(ed.current_line))?;
         // Insert after the previous line
         if addr > 1 {
             addr -= 1;
@@ -142,9 +151,9 @@ impl Command {
     }
 
     fn append(ed: &mut Red, after: Option<Address>) -> Result<Action, failure::Error> {
-        let addr = after.map(|addr| Self::get_actual_line(&ed, addr)).unwrap_or(ed.current_line);
+        let addr = after.map(|addr| Self::get_actual_line(&ed, addr)).unwrap_or(Ok(ed.current_line))?;
         ed.current_line = addr;
-        ed.mode = Mode::Command;
+        ed.mode = Mode::Input;
         Ok(Action::Continue)
     }
 
@@ -152,6 +161,10 @@ impl Command {
                              ed: &mut Red,
                              start: Option<Address>, end: Option<Address>, show_number: bool)
         -> Result<Action, failure::Error> {
+        if ed.data.is_empty() {
+            return Err(format_err!("Invalid address"))
+        }
+
         match (start, end) {
             (None, None) => {
                 if show_number {
@@ -161,7 +174,7 @@ impl Command {
             },
 
             (Some(start), None) => {
-                ed.current_line = Self::get_actual_line(&ed, start);
+                ed.current_line = Self::get_actual_line(&ed, start)?;
 
                 if show_number {
                     write!(output, "{}\t", ed.current_line)?;
@@ -170,7 +183,7 @@ impl Command {
             }
 
             (None, Some(end)) => {
-                let end = Self::get_actual_line(&ed, end);
+                let end = Self::get_actual_line(&ed, end)?;
 
                 for line in 1..=end {
                     if show_number {
@@ -184,8 +197,8 @@ impl Command {
             }
 
             (Some(start), Some(end)) => {
-                let start = Self::get_actual_line(&ed, start);
-                let end = Self::get_actual_line(&ed, end);
+                let start = Self::get_actual_line(&ed, start)?;
+                let end = Self::get_actual_line(&ed, end)?;
 
                 for line in start..=end {
                     if show_number {
@@ -202,15 +215,29 @@ impl Command {
         Ok(Action::Continue)
     }
 
-    fn get_actual_line(ed: &Red, addr: Address) -> usize {
+    fn get_actual_line(ed: &Red, addr: Address) -> Result<usize, failure::Error> {
         use self::Address::*;
         match addr {
-            CurrentLine => ed.current_line,
-            LastLine => ed.total_lines,
-            Numbered(n) => n,
+            CurrentLine => Ok(ed.current_line),
+            LastLine => Ok(ed.total_lines),
+            Numbered(n) => {
+                if n > ed.total_lines {
+                    return Err(format_err!("Invalid address"));
+                }
+                Ok(n)
+            },
             Offset(n) => {
-                let current = ed.current_line as isize + n;
-                current as usize
+                let line = ed.current_line as isize + n;
+                if line < 1 {
+                    return Err(format_err!("Invalid address"));
+                }
+
+                let line = line as usize;
+                if line > ed.total_lines {
+                    return Err(format_err!("Invalid address"));
+                }
+
+                Ok(line)
             },
         }
 

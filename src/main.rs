@@ -44,6 +44,7 @@ pub struct Red {
     mode: Mode,
     path: Option<String>,
     dirty: bool,
+    last_error: Option<String>
 }
 
 impl Red {
@@ -65,11 +66,21 @@ impl Red {
             mode: Mode::Command,
             path: path,
             dirty: false,
+            last_error: None,
         }
     }
 
     fn data_size(&self) -> usize {
         self.data.iter().map(|l| l.len()+1).sum()
+    }
+
+    fn set_line(&mut self, line: usize) -> Result<(), failure::Error> {
+        if line < 1 || line > self.total_lines {
+            Err(format_err!("Invalid address"))
+        } else {
+            self.current_line = line;
+            Ok(())
+        }
     }
 
     fn get_line(&self, line: usize) -> Option<&str> {
@@ -146,14 +157,23 @@ fn main() -> Result<(), ExitFailure> {
         match readline {
             Ok(line) => {
                 debug!("Line: {:?}", line);
-                let cmd = ed.dispatch(&line)?;
-                debug!("Command: {:?}", cmd);
-                match cmd {
-                    Action::Quit => break,
-                    Action::Continue => {},
-                    Action::Unknown => {
+                match ed.dispatch(&line) {
+                    Ok(res) => {
+                        debug!("Result: {:?}", res);
+
+                        match res {
+                            Action::Quit => break,
+                            Action::Continue => {},
+                            Action::Unknown => {
+                                println!("?");
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        debug!("Saving error: {:?}", err);
+                        ed.last_error = Some(err.to_string());
                         println!("?");
-                    },
+                    }
                 }
             },
             Err(ReadlineError::Interrupted) => {
