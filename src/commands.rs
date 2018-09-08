@@ -73,8 +73,13 @@ impl Command {
         Ok(Action::Continue)
     }
 
-    fn quit(_ed: &mut Red) -> Result<Action, failure::Error> {
-        Ok(Action::Quit)
+    fn quit(ed: &mut Red) -> Result<Action, failure::Error> {
+        if ed.dirty {
+            ed.dirty = false;
+            return Err(format_err!("Warning: buffer modified"));
+        } else {
+            Ok(Action::Quit)
+        }
     }
 
     fn jump(ed: &mut Red, addr: Address) -> Result<Action, failure::Error> {

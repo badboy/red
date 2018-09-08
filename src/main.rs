@@ -181,8 +181,15 @@ fn main() -> Result<(), ExitFailure> {
                 println!("?");
             },
             Err(ReadlineError::Eof) => {
-                debug!("EOF send. Quitting.");
-                break
+                debug!("EOF send.");
+                match Command::Quit.execute(&mut ed) {
+                    Err(err) => {
+                        ed.last_error = Some(err.to_string());
+                        println!("?");
+                    }
+                    Ok(Action::Quit) => break,
+                    Ok(_) => panic!("Unknown action on EOF"),
+                }
             },
             Err(err) => {
                 debug!("Unknown error. Failing.");
