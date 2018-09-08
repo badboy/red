@@ -55,7 +55,6 @@ impl Command {
             Write { start, end, file } => Self::write(ed, start, end, file),
             Insert { before } => Self::insert(ed, before),
             Append { after } => Self::append(ed, after),
-            _ => Ok(Action::Unknown),
         }
     }
 
