@@ -52,9 +52,14 @@ impl Red {
         let (path, data) = match path {
             None => (None, vec![]),
             Some(path) => {
-                let file = File::open(&path).expect("Can't open file");
-                let reader = BufReader::new(file);
-                (Some(path), reader.lines().map(|l| l.unwrap()).collect())
+                let data = match File::open(&path) {
+                    Ok(file) => {
+                        let reader = BufReader::new(file);
+                        reader.lines().map(|l| l.unwrap()).collect()
+                    }
+                    Err(_) => vec![],
+                };
+                (Some(path), data)
             }
         };
 

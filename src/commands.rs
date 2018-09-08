@@ -171,7 +171,7 @@ impl Command {
     fn write(ed: &mut Red, mut start: Option<Address>, mut end: Option<Address>, file: Option<String>)
         -> Result<Action, failure::Error> {
 
-        let file = file.or(ed.path.take());
+        let file = file.or(ed.path.clone());
         match file {
             None => return Ok(Action::Unknown),
             Some(path) => {
