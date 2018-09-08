@@ -8,7 +8,7 @@ extern crate exitfailure;
 #[macro_use] extern crate log;
 extern crate env_logger;
 
-use std::{env, cmp};
+use std::env;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::fs::File;
@@ -56,7 +56,8 @@ struct Red {
     total_lines: usize,
     data: Vec<String>,
     mode: Mode,
-    path: Option<String>
+    path: Option<String>,
+    dirty: bool,
 }
 
 impl Red {
@@ -76,6 +77,7 @@ impl Red {
             data: data,
             mode: Mode::Command,
             path: path,
+            dirty: false,
         }
     }
 
@@ -103,6 +105,8 @@ impl Red {
                 for idx in range.iter().take(self.total_lines) {
                     writeln!(file, "{}", self.data[idx-1])?;
                 }
+
+                self.dirty = false;
             }
         }
 
@@ -175,14 +179,19 @@ impl Red {
                     Range::Jump(_) => panic!("Can't delete from a jump"),
                 };
 
+                let mut modified = false;
                 debug!("Removing from {}", start);
                 for idx in range.iter().take(self.total_lines) {
                     debug!("Removing at index {}", idx);
                     self.data.remove(start-1);
+                    modified = true;
                 }
 
-                self.total_lines = self.data.len();
-                self.current_line = self.total_lines;
+                if modified {
+                    self.total_lines = self.data.len();
+                    self.current_line = self.total_lines;
+                    self.dirty = true;
+                }
                 Ok(Action::Continue)
             }
             _ => Ok(Action::Unknown),
@@ -203,6 +212,7 @@ impl Red {
         }
         self.current_line += 1;
         self.total_lines = self.data.len();
+        self.dirty = true;
 
         Ok(Action::Continue)
     }
