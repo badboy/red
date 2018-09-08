@@ -39,7 +39,10 @@ pub fn parse(tokens: &[Token]) -> Command {
             Token::Address(addr) if first_addr => {
                 end = Some(parse_address(addr));
             }
-            Token::Separator(_) => separator_found = true,
+            Token::Separator(_) => {
+                separator_found = true;
+                first_addr = true;
+            },
             Token::Argument(a) => {
                 arg = Some(a.to_string());
             }
