@@ -71,8 +71,8 @@ impl Red {
         };
 
         Red {
-            current_line: cmp::max(data.len(), 1),
-            total_lines: cmp::max(data.len(), 1),
+            current_line: data.len(),
+            total_lines: data.len(),
             data: data,
             mode: Mode::Command,
             path: path,
@@ -92,7 +92,7 @@ impl Red {
         }
     }
 
-    fn write(&mut self, mut range: Range) -> Result<(), failure::Error> {
+    fn write(&mut self, range: Range) -> Result<(), failure::Error> {
         match self.path {
             None => panic!("Can't write without a file path"),
             Some(ref path) => {
@@ -164,6 +164,25 @@ impl Red {
                 if self.current_line > 1 {
                     self.current_line -= 1;
                 }
+                Ok(Action::Continue)
+            }
+            "d" => {
+                debug!("Deleting lines in range {:?}", range);
+                let start = match range {
+                    Range::From(n) => n,
+                    Range::Full(a,_) => a,
+                    Range::Single(n) => n,
+                    Range::Jump(_) => panic!("Can't delete from a jump"),
+                };
+
+                debug!("Removing from {}", start);
+                for idx in range.iter().take(self.total_lines) {
+                    debug!("Removing at index {}", idx);
+                    self.data.remove(start-1);
+                }
+
+                self.total_lines = self.data.len();
+                self.current_line = self.total_lines;
                 Ok(Action::Continue)
             }
             _ => Ok(Action::Unknown),
