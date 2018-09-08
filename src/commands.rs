@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Write};
 use failure;
 use {Red};
@@ -135,6 +135,8 @@ impl Command {
 
                 let file = File::create(&path)?;
                 Self::write_range(file, ed, start, end, false)?;
+                let size = fs::metadata(&path)?.len();
+                println!("{}", size);
 
                 ed.path = Some(path);
                 ed.dirty = false;
