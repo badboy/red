@@ -142,8 +142,8 @@ impl Command {
             (None, Some(end)) => {
                 let end = Self::get_actual_line(&ed, end)?;
 
-                for line in 1..=end {
-                    ed.data.remove(line-1);
+                for _ in 1..=end {
+                    ed.data.remove(0);
                 }
 
                 ed.dirty = true;
@@ -155,7 +155,7 @@ impl Command {
                 let start = Self::get_actual_line(&ed, start)?;
                 let end = Self::get_actual_line(&ed, end)?;
 
-                for line in start..=end {
+                for _ in start..=end {
                     ed.data.remove(start-1);
                 }
 
