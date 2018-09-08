@@ -1,0 +1,9 @@
+[package]
+authors = ["Jan-Erik Rediger <janerik@fnordig.de>"]
+name = "red"
+version = "0.1.0"
+
+[dependencies]
+exitfailure = "0.5.1"
+failure = "0.1.2"
+rustyline = "2.0.1"
