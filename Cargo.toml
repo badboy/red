@@ -4,6 +4,8 @@ name = "red"
 version = "0.1.0"
 
 [dependencies]
+env_logger = "0.5.13"
 exitfailure = "0.5.1"
 failure = "0.1.2"
+log = "0.4.5"
 rustyline = "2.0.1"
