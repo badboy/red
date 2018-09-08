@@ -27,7 +27,7 @@ enum Action {
 #[derive(Debug)]
 enum Mode {
     Command,
-    Insert,
+    Input,
 }
 
 #[derive(Debug)]
@@ -159,12 +159,12 @@ impl Red {
             }
             "a" => {
                 debug!("Appending after {}", self.current_line);
-                self.mode = Mode::Insert;
+                self.mode = Mode::Input;
                 Ok(Action::Continue)
             }
             "i" => {
                 debug!("Inserting before {}", self.current_line);
-                self.mode = Mode::Insert;
+                self.mode = Mode::Input;
                 if self.current_line > 1 {
                     self.current_line -= 1;
                 }
@@ -220,14 +220,14 @@ impl Red {
     fn dispatch(&mut self, line: &str) -> Result<Action, failure::Error> {
         match self.mode {
             Mode::Command => self.dispatch_command(line),
-            Mode::Insert => self.dispatch_interactive(line),
+            Mode::Input => self.dispatch_interactive(line),
         }
     }
 
     fn prompt(&self) -> &str {
         match self.mode {
             Mode::Command => "*",
-            Mode::Insert => "",
+            Mode::Input => "",
         }
     }
 }
