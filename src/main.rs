@@ -7,15 +7,27 @@ extern crate exitfailure;
 #[macro_use] extern crate failure;
 #[macro_use] extern crate log;
 extern crate env_logger;
+#[macro_use]
+extern crate structopt;
 
-use std::env;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::fs::File;
 
 use exitfailure::ExitFailure;
+use structopt::StructOpt;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+
+/// Command line parser.
+#[derive(Debug, StructOpt)]
+pub struct Cli {
+  /// file
+  path: Option<String>,
+  /// use STRING as an interactive prompt
+  #[structopt(short = "p", long = "prompt", default_value="")]
+  prompt: String,
+}
 
 #[derive(Debug,Eq,PartialEq)]
 enum Action {
@@ -52,6 +64,7 @@ impl Range {
 
 #[derive(Debug)]
 struct Red {
+    prompt: String,
     current_line: usize,
     total_lines: usize,
     data: Vec<String>,
@@ -61,7 +74,7 @@ struct Red {
 }
 
 impl Red {
-    fn new(path: Option<String>) -> Red {
+    fn new(prompt: String, path: Option<String>) -> Red {
         let (path, data) = match path {
             None => (None, vec![]),
             Some(path) => {
@@ -72,6 +85,7 @@ impl Red {
         };
 
         Red {
+            prompt: prompt,
             current_line: data.len(),
             total_lines: data.len(),
             data: data,
@@ -226,7 +240,7 @@ impl Red {
 
     fn prompt(&self) -> &str {
         match self.mode {
-            Mode::Command => "*",
+            Mode::Command => &self.prompt,
             Mode::Input => "",
         }
     }
@@ -337,8 +351,9 @@ fn parse_range(current_line: usize, total_lines: usize, line: &str) -> (&str, Ra
 fn main() -> Result<(), ExitFailure> {
     env_logger::init();
 
+    let args = Cli::from_args();
     let mut rl = Editor::<()>::new();
-    let mut ed = Red::new(env::args().skip(1).next());
+    let mut ed = Red::new(args.prompt, args.path);
 
     let size = ed.data_size();
     if size > 0 {
