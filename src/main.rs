@@ -8,6 +8,11 @@ extern crate exitfailure;
 #[macro_use] extern crate log;
 extern crate env_logger;
 
+use std::{env, cmp};
+use std::io::BufReader;
+use std::io::prelude::*;
+use std::fs::File;
+
 use exitfailure::ExitFailure;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
@@ -17,6 +22,12 @@ enum Action {
     Quit,
     Continue,
     Unknown,
+}
+
+#[derive(Debug)]
+enum Mode {
+    Command,
+    Insert,
 }
 
 #[derive(Debug)]
@@ -44,26 +55,32 @@ struct Red {
     current_line: usize,
     total_lines: usize,
     data: Vec<String>,
+    mode: Mode,
+    path: Option<String>
 }
 
 impl Red {
-    fn new() -> Red {
-        let data = vec![
-            "line 1".into(),
-            "line 2".into(),
-            "line 3".into(),
-            "line 4".into(),
-            "line 5".into(),
-            "line 6".into(),
-            "line 7".into(),
-            "line 8".into(),
-        ];
+    fn new(path: Option<String>) -> Red {
+        let (path, data) = match path {
+            None => (None, vec![]),
+            Some(path) => {
+                let file = File::open(&path).expect("Can't open file");
+                let reader = BufReader::new(file);
+                (Some(path), reader.lines().map(|l| l.unwrap()).collect())
+            }
+        };
 
         Red {
-            current_line: data.len(),
-            total_lines: data.len(),
-            data: data
+            current_line: cmp::max(data.len(), 1),
+            total_lines: cmp::max(data.len(), 1),
+            data: data,
+            mode: Mode::Command,
+            path: path,
         }
+    }
+
+    fn data_size(&self) -> usize {
+        self.data.iter().map(|l| l.len()+1).sum()
     }
 
     fn set_line(&mut self, line: usize) -> Result<(), failure::Error> {
@@ -75,7 +92,24 @@ impl Red {
         }
     }
 
-    fn dispatch(&mut self, cmd: &str) -> Result<Action, failure::Error> {
+    fn write(&mut self, mut range: Range) -> Result<(), failure::Error> {
+        match self.path {
+            None => panic!("Can't write without a file path"),
+            Some(ref path) => {
+                debug!("Writing range {:?} to file {:?}", range, path);
+
+                let mut file = File::create(path)?;
+
+                for idx in range.iter().take(self.total_lines) {
+                    writeln!(file, "{}", self.data[idx-1])?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn dispatch_command(&mut self, cmd: &str) -> Result<Action, failure::Error> {
         let cmd = cmd.trim();
         let (cmd, range) = parse_range(self.current_line, self.total_lines, cmd);
         debug!("cmd: {:?}, range: {:?}", cmd, range);
@@ -116,9 +150,55 @@ impl Red {
             }
             "w" => {
                 debug!("Writing lines in range {:?}", range);
+                self.write(range)?;
+                Ok(Action::Continue)
+            }
+            "a" => {
+                debug!("Appending after {}", self.current_line);
+                self.mode = Mode::Insert;
+                Ok(Action::Continue)
+            }
+            "i" => {
+                debug!("Inserting before {}", self.current_line);
+                self.mode = Mode::Insert;
+                if self.current_line > 1 {
+                    self.current_line -= 1;
+                }
                 Ok(Action::Continue)
             }
             _ => Ok(Action::Unknown),
+        }
+    }
+
+    fn dispatch_interactive(&mut self, line: &str) -> Result<Action, failure::Error> {
+        if line == "." {
+            self.mode = Mode::Command;
+            return Ok(Action::Continue);
+        }
+
+        let idx = self.current_line;
+        if self.data.is_empty() {
+            self.data.push(line.into());
+        } else {
+            self.data.insert(idx, line.into());
+        }
+        self.current_line += 1;
+        self.total_lines = self.data.len();
+
+        Ok(Action::Continue)
+    }
+
+    fn dispatch(&mut self, line: &str) -> Result<Action, failure::Error> {
+        match self.mode {
+            Mode::Command => self.dispatch_command(line),
+            Mode::Insert => self.dispatch_interactive(line),
+        }
+    }
+
+    fn prompt(&self) -> &str {
+        match self.mode {
+            Mode::Command => "*",
+            Mode::Insert => "",
         }
     }
 }
@@ -229,11 +309,16 @@ fn main() -> Result<(), ExitFailure> {
     env_logger::init();
 
     let mut rl = Editor::<()>::new();
-    let mut ed = Red::new();
+    let mut ed = Red::new(env::args().skip(1).next());
+
+    let size = ed.data_size();
+    if size > 0 {
+        println!("{}", size);
+    }
 
     loop {
         debug!("Ed: {:?}", ed);
-        let readline = rl.readline("*");
+        let readline = rl.readline(ed.prompt());
         match readline {
             Ok(line) => {
                 debug!("Line: {:?}", line);
