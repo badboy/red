@@ -259,7 +259,7 @@ impl Command {
             .map(|addr| Self::get_actual_line(&ed, addr))
             .unwrap_or_else(|| Ok(ed.current_line))?;
         // Insert after the previous line
-        if addr > 1 {
+        if addr > 0 {
             addr -= 1;
         }
         ed.current_line = addr;
