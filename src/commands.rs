@@ -76,6 +76,8 @@ pub enum Command {
         dest: Address,
     },
     Substitute {
+        start: Option<Address>,
+        end: Option<Address>,
         arg: Option<String>,
     },
 }
@@ -100,7 +102,7 @@ impl Command {
             Change { start, end } => Self::change(ed, start, end),
             Read { after, file } => Self::read(ed, after, file),
             Move { start, end, dest } => Self::move_lines(ed, start, end, dest),
-            Substitute { arg } => Self::substitute(ed, arg),
+            Substitute { start, end, arg } => Self::substitute(ed, start, end, arg),
         }
     }
 
@@ -436,10 +438,15 @@ impl Command {
         Ok(Action::Continue)
     }
 
-    fn substitute(ed: &mut Red, arg: Option<String>) -> Result<Action, failure::Error> {
+    fn substitute(
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+        arg: Option<String>,
+    ) -> Result<Action, failure::Error> {
         let arg = match arg {
             None => return Err(format_err!("No previous substitution")),
-            Some(arg) => arg
+            Some(arg) => arg,
         };
 
         if &arg[0..=0] != "/" {
@@ -453,7 +460,7 @@ impl Command {
         let re = &arg[..regex_end];
         debug!("Regex: {:?}", re);
 
-        let mut replacement = &arg[regex_end + 1 ..];
+        let mut replacement = &arg[regex_end + 1..];
         let flags = match replacement.find(|c| c == '/') {
             None => "",
             Some(idx) => {
@@ -468,27 +475,38 @@ impl Command {
 
         let re = Regex::new(re).map_err(|_| format_err!("No match"))?;
         let all = flags.chars().any(|c| c == 'g');
-        let start = 0;
-        let end = ed.lines();
+
+        let mut start = start
+            .map(|addr| Self::get_actual_line(&ed, addr))
+            .unwrap_or_else(|| Ok(ed.current_line))?;
+        let end = end
+            .map(|addr| Self::get_actual_line(&ed, addr))
+            .unwrap_or_else(|| Ok(ed.current_line))?;
+
+        if start == 0 {
+            return Err(format_err!("Invalid address"));
+        }
+        start -= 1;
+        debug!("Replacement in range: {}..{}", start, end);
 
         let mut modified = None;
         for (line, idx) in ed.data[start..end].iter_mut().zip(start..end) {
             let new = if all {
                 let s = re.replace_all(line, replacement);
                 if &*s == line {
-                    continue
+                    continue;
                 }
                 s.into_owned()
             } else {
                 let s = re.replace(line, replacement);
                 if &*s == line {
-                    continue
+                    continue;
                 }
                 s.into_owned()
             };
 
             line.replace_range(.., &new);
-            modified = Some(idx+1);
+            modified = Some(idx + 1);
         }
 
         if let Some(idx) = modified {

@@ -114,7 +114,13 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
         }
         's' => {
             let mut suffix = match suffix {
-                None => return Ok(Command::Substitute { arg: None }),
+                None => {
+                    return Ok(Command::Substitute {
+                        start,
+                        end,
+                        arg: None,
+                    })
+                }
                 Some(suffix) => suffix,
             };
             if let Some(arg) = arg {
@@ -122,7 +128,11 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
                 suffix.push_str(&arg);
             }
 
-            Command::Substitute { arg: Some(suffix) }
+            Command::Substitute {
+                start,
+                end,
+                arg: Some(suffix),
+            }
         }
         _ => Command::Noop,
     };
@@ -220,9 +230,20 @@ mod test {
     fn parse_substitute() {
         assert_eq!(
             Command::Substitute {
+                start: None,
+                end: None,
                 arg: Some("/RE/replacement/flags".into())
             },
             parse(&tokenize("s/RE/replacement/flags").unwrap()).unwrap()
+        );
+
+        assert_eq!(
+            Command::Substitute {
+                start: Some(Address::Numbered(1)),
+                end: Some(Address::Numbered(10)),
+                arg: Some("/RE/replacement/flags".into())
+            },
+            parse(&tokenize("1,10s/RE/replacement/flags").unwrap()).unwrap()
         );
     }
 }
