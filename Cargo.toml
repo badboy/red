@@ -1,7 +1,19 @@
 [package]
-authors = ["Jan-Erik Rediger <janerik@fnordig.de>"]
 name = "red-editor"
+authors = ["Jan-Erik Rediger <janerik@fnordig.de>"]
 version = "0.1.0"
+description = "A Rust Editor - red is a line-oriented text editor, based on the popular ed utility."
+repository = "https://github.com/badboy/red"
+homepage = "https://github.com/badboy/red"
+license = "MIT"
+readme = "README.md"
+
+include = [
+  "Cargo.toml",
+  "README*",
+  "LICENSE*",
+  "src/**/*",
+]
 
 [dependencies]
 env_logger = "0.5.13"
