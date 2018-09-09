@@ -56,6 +56,9 @@ pub enum Command {
     Append {
         after: Option<Address>,
     },
+    Edit {
+        file: Option<String>,
+    },
 }
 
 impl Command {
@@ -74,6 +77,7 @@ impl Command {
             Write { start, end, file } => Self::write(ed, start, end, file),
             Insert { before } => Self::insert(ed, before),
             Append { after } => Self::append(ed, after),
+            Edit { file } => Self::edit(ed, file),
         }
     }
 
@@ -248,6 +252,18 @@ impl Command {
             .unwrap_or_else(|| Ok(ed.current_line))?;
         ed.current_line = addr;
         ed.mode = Mode::Input;
+        Ok(Action::Continue)
+    }
+
+    fn edit(ed: &mut Red, file: Option<String>) -> Result<Action, failure::Error> {
+        let file = file.or_else(|| ed.path.clone());
+
+        let file = match file {
+            None => return Err(format_err!("No current filename")),
+            Some(file) => file,
+        };
+        ed.load_file(file)?;
+
         Ok(Action::Continue)
     }
 

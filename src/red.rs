@@ -48,6 +48,20 @@ impl Red {
         }
     }
 
+    pub fn load_file(&mut self, path: String) -> Result<(), failure::Error> {
+        let file = File::open(&path)?;
+        let reader = BufReader::new(file);
+        let data = reader.lines().map(|l| l.unwrap()).collect::<Vec<_>>();
+
+        let len = data.len();
+        self.path = Some(path);
+        self.data = data;
+        self.total_lines = len;
+        self.current_line = len;
+
+        Ok(())
+    }
+
     pub fn data_size(&self) -> usize {
         self.data.iter().map(|l| l.len() + 1).sum()
     }
