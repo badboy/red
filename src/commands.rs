@@ -67,6 +67,11 @@ pub enum Command {
         after: Option<Address>,
         file: Option<String>,
     },
+    Move {
+        start: Option<Address>,
+        end: Option<Address>,
+        dest: Address,
+    },
 }
 
 impl Command {
@@ -88,6 +93,7 @@ impl Command {
             Edit { file } => Self::edit(ed, file),
             Change { start, end } => Self::change(ed, start, end),
             Read { after, file } => Self::read(ed, after, file),
+            Move { start, end, dest } => Self::move_lines(ed, start, end, dest),
         }
     }
 
@@ -320,6 +326,104 @@ impl Command {
         ed.dirty = true;
         ed.current_line = addr;
         println!("{}", written);
+
+        Ok(Action::Continue)
+    }
+
+    fn move_lines(
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+        dest: Address
+    ) -> Result<Action, failure::Error> {
+        if ed.data.is_empty() {
+            return Ok(Action::Continue);
+        }
+
+        let mut dest = Self::get_actual_line(&ed, dest)?;
+        debug!("Moving after line {}", dest);
+
+        match (start, end) {
+            (None, None) => {
+                let line_no = ed.current_line;
+                debug!("Moving line {} to {}", line_no, dest);
+                if line_no == dest {
+                    return Err(format_err!("Invalid destination"));
+                }
+                let line = ed.data.remove(line_no-1);
+                if dest > line_no {
+                    dest -= 1;
+                }
+
+                debug!("After adjustment: Moving line {} to {}", line_no, dest);
+                ed.data.insert(dest, line);
+                ed.set_line(dest)?;
+            }
+
+            (Some(start), None) => {
+                let line_no = Self::get_actual_line(&ed, start)?;
+                debug!("Moving line {} to {}", line_no, dest);
+                if line_no == dest {
+                    return Err(format_err!("Invalid destination"));
+                }
+                let line = ed.data.remove(line_no-1);
+                if dest > line_no {
+                    dest -= 1;
+                }
+                debug!("After adjustment: Moving line {} to {}", line_no, dest);
+                ed.data.insert(dest, line);
+                let dest = cmp::max(dest, 1);
+                ed.set_line(dest)?;
+            }
+
+            (None, Some(end)) => {
+                let mut lines = vec![];
+                let end = Self::get_actual_line(&ed, end)?;
+                debug!("Moving lines 1..{} to {}", end, dest);
+
+                if dest <= end {
+                    return Err(format_err!("Invalid destination"));
+                }
+
+                for _ in 1..=end {
+                    lines.push(ed.data.remove(0));
+                }
+
+                dest -= lines.len();
+                debug!("New destination after adjustment: {}", dest);
+                for line in lines {
+                    ed.data.insert(dest, line);
+                    dest += 1;
+                }
+
+                ed.set_line(dest)?;
+            }
+
+            (Some(start), Some(end)) => {
+                let mut lines = vec![];
+                let start = Self::get_actual_line(&ed, start)?;
+                let end = Self::get_actual_line(&ed, end)?;
+                debug!("Moving lines {}..{} to {}", start, end, dest);
+
+                if dest >= start && dest <= end {
+                    return Err(format_err!("Invalid destination"));
+                }
+
+                for _ in start..=end {
+                    lines.push(ed.data.remove(start-1));
+                }
+
+                if end < dest {
+                    dest -= lines.len();
+                }
+                debug!("New destination after adjustment: {}", dest);
+                for line in lines {
+                    ed.data.insert(dest, line);
+                    dest += 1;
+                }
+                ed.set_line(dest)?;
+            }
+        }
 
         Ok(Action::Continue)
     }

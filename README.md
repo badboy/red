@@ -39,13 +39,13 @@ q
 * `e [file]` - Delete the entire contents of the buffer and read the specified file into the buffer.
 * `(.,.)c` - Delete the addressed line, then accept input text to replace these lines.
 * `(.)r [file]` - Read contents of another file and insert into the buffer.
+* `(.,.)maddress` - Move the addressed lines after the line addressed by `address`.
 
 ## Not (yet) implemented
 
 * `/` - Addressing lines by search.
 * `(.,.)g/RE/command` - Global regular expression search.
 * `'x` - Marking lines with a name.
-* `(.,.)maddress` - Move the addressed lines after the line addressed by `address`.
 
 ## License
 

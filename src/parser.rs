@@ -102,6 +102,19 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
             after: end.or(start),
             file: arg,
         },
+        'm' => {
+            let suffix = match suffix {
+                None => return Err(format_err!("Invalid target address")),
+                Some(suffix) => suffix,
+            };
+            let dest = parse_address(&suffix)?;
+
+            Command::Move {
+                start,
+                end,
+                dest,
+            }
+        }
         _ => Command::Noop,
     };
     Ok(cmd)
