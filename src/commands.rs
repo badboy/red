@@ -1,4 +1,5 @@
 use failure;
+use regex::Regex;
 use std::cmp;
 use std::fs::{self, File};
 use std::io::{self, Write};
@@ -74,6 +75,9 @@ pub enum Command {
         end: Option<Address>,
         dest: Address,
     },
+    Substitute {
+        arg: Option<String>,
+    },
 }
 
 impl Command {
@@ -96,6 +100,7 @@ impl Command {
             Change { start, end } => Self::change(ed, start, end),
             Read { after, file } => Self::read(ed, after, file),
             Move { start, end, dest } => Self::move_lines(ed, start, end, dest),
+            Substitute { arg } => Self::substitute(ed, arg),
         }
     }
 
@@ -429,6 +434,70 @@ impl Command {
 
         ed.dirty = true;
         Ok(Action::Continue)
+    }
+
+    fn substitute(ed: &mut Red, arg: Option<String>) -> Result<Action, failure::Error> {
+        let arg = match arg {
+            None => return Err(format_err!("No previous substitution")),
+            Some(arg) => arg
+        };
+
+        if &arg[0..=0] != "/" {
+            return Err(format_err!("Missing pattern delimiter"));
+        }
+        let arg = &arg[1..];
+        let regex_end = match arg.find(|c| c == '/') {
+            None => return Err(format_err!("Missing pattern delimiter")),
+            Some(idx) => idx,
+        };
+        let re = &arg[..regex_end];
+        debug!("Regex: {:?}", re);
+
+        let mut replacement = &arg[regex_end + 1 ..];
+        let flags = match replacement.find(|c| c == '/') {
+            None => "",
+            Some(idx) => {
+                let flags = &replacement[idx + 1..];
+                replacement = &replacement[0..idx];
+                flags
+            }
+        };
+
+        debug!("Replacement: {:?}", replacement);
+        debug!("Flags: {:?}", flags);
+
+        let re = Regex::new(re).map_err(|_| format_err!("No match"))?;
+        let all = flags.chars().any(|c| c == 'g');
+        let start = 0;
+        let end = ed.lines();
+
+        let mut modified = None;
+        for (line, idx) in ed.data[start..end].iter_mut().zip(start..end) {
+            let new = if all {
+                let s = re.replace_all(line, replacement);
+                if &*s == line {
+                    continue
+                }
+                s.into_owned()
+            } else {
+                let s = re.replace(line, replacement);
+                if &*s == line {
+                    continue
+                }
+                s.into_owned()
+            };
+
+            line.replace_range(.., &new);
+            modified = Some(idx+1);
+        }
+
+        if let Some(idx) = modified {
+            ed.dirty = true;
+            ed.set_line(idx)?;
+            Self::print(ed, None, None)
+        } else {
+            Err(format_err!("No match"))
+        }
     }
 
     fn write_range<W: Write>(

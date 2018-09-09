@@ -112,6 +112,18 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
 
             Command::Move { start, end, dest }
         }
+        's' => {
+            let mut suffix = match suffix {
+                None => return Ok(Command::Substitute { arg: None }),
+                Some(suffix) => suffix,
+            };
+            if let Some(arg) = arg {
+                suffix.push_str(" ");
+                suffix.push_str(&arg);
+            }
+
+            Command::Substitute { arg: Some(suffix) }
+        }
         _ => Command::Noop,
     };
     Ok(cmd)
@@ -201,6 +213,16 @@ mod test {
                 address: Address::CurrentLine
             },
             parse(&tokenize(".").unwrap()).unwrap()
+        );
+    }
+
+    #[test]
+    fn parse_substitute() {
+        assert_eq!(
+            Command::Substitute {
+                arg: Some("/RE/replacement/flags".into())
+            },
+            parse(&tokenize("s/RE/replacement/flags").unwrap()).unwrap()
         );
     }
 }

@@ -15,6 +15,7 @@ static COMMANDS: &'static [char] = &[
     'c', // change
     'r', // read
     'm', // move
+    's', // substitute
 ];
 
 #[derive(Debug, PartialEq, Eq)]
