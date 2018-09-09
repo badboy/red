@@ -42,6 +42,7 @@ q
 * `(.,.)c` - Delete the addressed line, then accept input text to replace these lines.
 * `(.)r [file]` - Read contents of another file and insert into the buffer.
 * `(.,.)maddress` - Move the addressed lines after the line addressed by `address`.
+* `(.,.)s/RE/replacement/flags` - Search the addressed lines for an occurence of `RE` and substitute either the first or all matched strings with `replacement`. Supported flags: **g** to globally substitute instances of `RE`.
 
 ## Not (yet) implemented
 
