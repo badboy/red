@@ -13,16 +13,15 @@ static COMMANDS: &'static [char] = &[
     'e', // edit file
     'c', // change
     'r', // read
+    'm', // move
 ];
-
-static SUFFIXES: &'static [char] = &['l', 'p', 'n'];
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Token<'a> {
     Address(&'a str),
     Separator(char),
     Command(char),
-    Suffix(char),
+    Suffix(&'a str),
     Argument(&'a str),
 }
 
@@ -70,15 +69,26 @@ pub fn tokenize(line: &str) -> Result<Vec<Token>, failure::Error> {
 
     if after_cmd_idx < line.len() {
         let suffix_char = line[after_cmd_idx..=after_cmd_idx].chars().next().unwrap();
-        if SUFFIXES.contains(&suffix_char) {
-            res.push(Token::Suffix(suffix_char));
-        } else if suffix_char != ' ' {
-            return Err(format_err!("Invalid command suffix"));
-        }
+        if suffix_char == ' ' {
+            let arg = line[after_cmd_idx + 1..].trim();
+            if !arg.is_empty() {
+                res.push(Token::Argument(arg));
+            }
+        } else {
+            let arg = &line[after_cmd_idx..];
+            let before_arg = arg.find(|c| c == ' ');
+            match before_arg {
+                None => res.push(Token::Suffix(arg)),
+                Some(idx) => {
+                    let suffix = &arg[..idx];
+                    res.push(Token::Suffix(suffix));
 
-        let arg = line[after_cmd_idx + 1..].trim();
-        if !arg.is_empty() {
-            res.push(Token::Argument(arg));
+                    let arg = &arg[idx + 1..];
+                    if arg.len() > 0 {
+                        res.push(Token::Argument(arg));
+                    }
+                }
+            }
         }
     }
 
@@ -123,7 +133,7 @@ mod test {
             Token::Separator(','),
             Token::Address("$"),
             Token::Command('p'),
-            Token::Suffix('n'),
+            Token::Suffix("n"),
         ];
 
         assert_eq!(expected, tokenize("1,$pn").unwrap());
@@ -138,7 +148,7 @@ mod test {
 
     #[test]
     fn command_with_suffix() {
-        let expected = vec![Token::Command('p'), Token::Suffix('n')];
+        let expected = vec![Token::Command('p'), Token::Suffix("n")];
 
         assert_eq!(expected, tokenize("pn").unwrap());
     }
@@ -151,14 +161,27 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
-    fn missing_whitespace_argument() {
-        tokenize("pfile.txt").unwrap();
+    fn move_cmd() {
+        let expected = vec![
+            Token::Address("1"),
+            Token::Separator(','),
+            Token::Address("2"),
+            Token::Command('m'),
+            Token::Suffix("3"),
+        ];
+        assert_eq!(expected, tokenize("1,2m3").unwrap());
     }
 
     #[test]
-    #[should_panic]
-    fn invalid_suffix() {
-        tokenize("hello world").unwrap();
+    fn address_command_suffix_arg() {
+        let expected = vec![
+            Token::Address("1"),
+            Token::Separator(','),
+            Token::Address("2"),
+            Token::Command('m'),
+            Token::Suffix("3"),
+            Token::Argument("param"),
+        ];
+        assert_eq!(expected, tokenize("1,2m3 param").unwrap());
     }
 }

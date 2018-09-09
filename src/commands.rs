@@ -306,7 +306,8 @@ impl Command {
         };
         let data = ed.load_data(&file)?;
 
-        let mut addr = after.map(|addr| Self::get_actual_line(&ed, addr))
+        let mut addr = after
+            .map(|addr| Self::get_actual_line(&ed, addr))
             .unwrap_or_else(|| Ok(ed.current_line))?;
 
         let mut written = 0;

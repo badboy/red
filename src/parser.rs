@@ -31,8 +31,9 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
 
     let mut start = None;
     let mut end = None;
-    let mut arg = None;
     let mut cmd = None;
+    let mut suffix = None;
+    let mut arg = None;
     let mut first_addr = false;
     let mut separator_found = false;
 
@@ -48,6 +49,9 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
             Token::Separator(_) => {
                 separator_found = true;
                 first_addr = true;
+            }
+            Token::Suffix(s) => {
+                suffix = Some(s.to_string());
             }
             Token::Argument(a) => {
                 arg = Some(a.to_string());
