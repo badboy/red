@@ -99,7 +99,7 @@ impl Red {
     fn parse_command(&self, line: &str) -> Result<Command, failure::Error> {
         let tokens = tokenizer::tokenize(line)?;
         debug!("tokens: {:#?}", tokens);
-        let command = parser::parse(&tokens);
+        let command = parser::parse(&tokens)?;
         debug!("command: {:#?}", command);
 
         Ok(command)

@@ -1,26 +1,28 @@
+use failure;
+
 use tokenizer::Token;
 use commands::Command;
 use commands::Address;
 
-fn parse_address(addr: &str) -> Address {
+fn parse_address(addr: &str) -> Result<Address, failure::Error> {
     match addr {
-        "." => return Address::CurrentLine,
-        "$" => return Address::LastLine,
+        "." => return Ok(Address::CurrentLine),
+        "$" => return Ok(Address::LastLine),
         _ => {}
     }
 
     if &addr[0..1] == "+" || &addr[0..1] == "-" {
-        let n = addr[0..].parse::<isize>().expect("Invalid address");
-        return Address::Offset(n);
+        let n = addr[0..].parse::<isize>().map_err(|_| format_err!("Invalid address"))?;
+        return Ok(Address::Offset(n));
     }
 
-    let n = addr.parse::<usize>().expect("Invalid address");
-    Address::Numbered(n)
+    let n = addr.parse::<usize>().map_err(|_| format_err!("Invalid address"))?;
+    Ok(Address::Numbered(n))
 }
 
-pub fn parse(tokens: &[Token]) -> Command {
+pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
     if tokens.is_empty() {
-        return Command::Noop;
+        return Ok(Command::Noop);
     }
 
     let mut start = None;
@@ -33,11 +35,11 @@ pub fn parse(tokens: &[Token]) -> Command {
     for token in tokens {
         match token {
             Token::Address(addr) if !first_addr => {
-                start = Some(parse_address(addr));
+                start = Some(parse_address(addr)?);
                 first_addr = true;
             }
             Token::Address(addr) if first_addr => {
-                end = Some(parse_address(addr));
+                end = Some(parse_address(addr)?);
             }
             Token::Separator(_) => {
                 separator_found = true;
@@ -61,13 +63,13 @@ pub fn parse(tokens: &[Token]) -> Command {
 
     let cmd = match cmd {
         None if start.is_some() && !end.is_some() => {
-            return Command::Jump { address: start.unwrap() }
+            return Ok(Command::Jump { address: start.unwrap() });
         },
-        None => return Command::Noop,
+        None => return Ok(Command::Noop),
         Some(c) => c,
     };
 
-    match cmd {
+    let cmd = match cmd {
         'p' => Command::Print { start, end },
         'n' => Command::Numbered { start, end },
         'd' => Command::Delete { start, end },
@@ -77,7 +79,8 @@ pub fn parse(tokens: &[Token]) -> Command {
         'h' => Command::Help,
         'q' => Command::Quit,
         _ => Command::Noop
-    }
+    };
+    Ok(cmd)
 }
 
 
@@ -88,23 +91,22 @@ mod test {
 
     #[test]
     fn address_variants() {
-        assert_eq!(Address::CurrentLine, parse_address("."));
-        assert_eq!(Address::LastLine, parse_address("$"));
-        assert_eq!(Address::Numbered(23), parse_address("23"));
-        assert_eq!(Address::Offset(2), parse_address("+2"));
-        assert_eq!(Address::Offset(-3), parse_address("-3"));
+        assert_eq!(Address::CurrentLine, parse_address(".").unwrap());
+        assert_eq!(Address::LastLine, parse_address("$").unwrap());
+        assert_eq!(Address::Numbered(23), parse_address("23").unwrap());
+        assert_eq!(Address::Offset(2), parse_address("+2").unwrap());
+        assert_eq!(Address::Offset(-3), parse_address("-3").unwrap());
     }
 
     #[test]
     #[should_panic]
-    // FIXME: parse_address should return a Result
     fn wrong_address_format() {
-        parse_address("d");
+        parse_address("d").unwrap();
     }
 
     #[test]
     fn parse_empty() {
-        assert_eq!(Command::Noop, parse(&tokenize("").unwrap()));
+        assert_eq!(Command::Noop, parse(&tokenize("").unwrap()).unwrap());
     }
 
     #[test]
@@ -113,7 +115,7 @@ mod test {
             start: Some(Address::Numbered(1)),
             end: Some(Address::Numbered(2))
         },
-        parse(&tokenize("1,2p").unwrap()));
+        parse(&tokenize("1,2p").unwrap()).unwrap());
     }
 
     #[test]
@@ -123,33 +125,33 @@ mod test {
             end: None,
             file: Some("file.txt".into())
         },
-        parse(&tokenize("w file.txt").unwrap()));
+        parse(&tokenize("w file.txt").unwrap()).unwrap());
     }
 
     #[test]
     fn parse_append() {
         assert_eq!(Command::Append {
             after: Some(Address::Numbered(2)),
-        }, parse(&tokenize("1,2a").unwrap()));
+        }, parse(&tokenize("1,2a").unwrap()).unwrap());
 
         assert_eq!(Command::Append {
             after: None,
-        }, parse(&tokenize("a").unwrap()));
+        }, parse(&tokenize("a").unwrap()).unwrap());
 
 
         assert_eq!(Command::Append {
             after: Some(Address::Numbered(1)),
-        }, parse(&tokenize("1a").unwrap()));
+        }, parse(&tokenize("1a").unwrap()).unwrap());
     }
 
     #[test]
     fn parse_jumps() {
         assert_eq!(Command::Jump {
             address: Address::Numbered(2)
-        }, parse(&tokenize("2").unwrap()));
+        }, parse(&tokenize("2").unwrap()).unwrap());
 
         assert_eq!(Command::Jump {
             address: Address::CurrentLine
-        }, parse(&tokenize(".").unwrap()));
+        }, parse(&tokenize(".").unwrap()).unwrap());
     }
 }
