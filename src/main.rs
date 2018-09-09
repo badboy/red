@@ -100,7 +100,7 @@ impl Red {
         let tokens = tokenizer::tokenize(line)?;
         debug!("tokens: {:#?}", tokens);
         let command = parser::parse(&tokens)?;
-        debug!("command: {:#?}", command);
+        debug!("parsed command: {:#?}", command);
 
         Ok(command)
     }
@@ -197,7 +197,7 @@ fn main() -> Result<(), ExitFailure> {
                 }
             },
             Err(err) => {
-                debug!("Unknown error. Failing.");
+                debug!("Unknown error: {:?}", err);
                 Err(format_err!("Error: {:?}", err))?;
             }
         }
