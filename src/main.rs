@@ -2,35 +2,37 @@
 //!
 //! An `ed` clone, written in Rust.
 
-extern crate rustyline;
 extern crate exitfailure;
-#[macro_use] extern crate failure;
-#[macro_use] extern crate log;
+extern crate rustyline;
+#[macro_use]
+extern crate failure;
+#[macro_use]
+extern crate log;
 extern crate env_logger;
 #[macro_use]
 extern crate structopt;
 
 use exitfailure::ExitFailure;
-use structopt::StructOpt;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+use structopt::StructOpt;
 
-mod red;
 mod commands;
-mod tokenizer;
 mod parser;
+mod red;
+mod tokenizer;
 
+use commands::{Action, Command};
 use red::Red;
-use commands::{Command, Action};
 
 /// Command line parser.
 #[derive(Debug, StructOpt)]
 pub struct Cli {
-  /// file
-  path: Option<String>,
-  /// use STRING as an interactive prompt
-  #[structopt(short = "p", long = "prompt", default_value="")]
-  prompt: String,
+    /// file
+    path: Option<String>,
+    /// use STRING as an interactive prompt
+    #[structopt(short = "p", long = "prompt", default_value = "")]
+    prompt: String,
 }
 
 fn main() -> Result<(), ExitFailure> {
@@ -57,7 +59,7 @@ fn main() -> Result<(), ExitFailure> {
 
                         match res {
                             Action::Quit => break,
-                            Action::Continue => {},
+                            Action::Continue => {}
                             Action::Unknown => {
                                 println!("?");
                             }
@@ -69,11 +71,11 @@ fn main() -> Result<(), ExitFailure> {
                         println!("?");
                     }
                 }
-            },
+            }
             Err(ReadlineError::Interrupted) => {
                 debug!("Readline Interrupted");
                 println!("?");
-            },
+            }
             Err(ReadlineError::Eof) => {
                 debug!("EOF send.");
                 match Command::Quit.execute(&mut ed) {
@@ -84,7 +86,7 @@ fn main() -> Result<(), ExitFailure> {
                     Ok(Action::Quit) => break,
                     Ok(_) => panic!("Unknown action on EOF"),
                 }
-            },
+            }
             Err(err) => {
                 debug!("Unknown error: {:?}", err);
                 Err(format_err!("Error: {:?}", err))?;

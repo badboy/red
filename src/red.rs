@@ -1,11 +1,11 @@
-use std::io::BufReader;
-use std::io::prelude::*;
 use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 
+use commands::{Action, Command, Mode};
 use failure;
-use commands::{Mode, Command, Action};
-use tokenizer;
 use parser;
+use tokenizer;
 
 #[derive(Debug)]
 pub struct Red {
@@ -16,7 +16,7 @@ pub struct Red {
     pub mode: Mode,
     pub path: Option<String>,
     pub dirty: bool,
-    pub last_error: Option<String>
+    pub last_error: Option<String>,
 }
 
 impl Red {
@@ -48,7 +48,7 @@ impl Red {
     }
 
     pub fn data_size(&self) -> usize {
-        self.data.iter().map(|l| l.len()+1).sum()
+        self.data.iter().map(|l| l.len() + 1).sum()
     }
 
     pub fn set_line(&mut self, line: usize) -> Result<(), failure::Error> {
@@ -62,7 +62,7 @@ impl Red {
 
     pub fn get_line(&self, line: usize) -> Option<&str> {
         if line > 0 && line <= self.total_lines {
-            Some(&self.data[line-1])
+            Some(&self.data[line - 1])
         } else {
             None
         }

@@ -1,10 +1,10 @@
+use failure;
 use std::cmp;
 use std::fs::{self, File};
 use std::io::{self, Write};
-use failure;
-use {Red};
+use Red;
 
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Address {
     CurrentLine,
     LastLine,
@@ -12,31 +12,50 @@ pub enum Address {
     Offset(isize),
 }
 
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Mode {
     Command,
     Input,
 }
 
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Action {
     Quit,
     Continue,
     Unknown,
 }
 
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Command {
     Noop,
     Quit,
     Help,
-    Jump { address: Address },
-    Print { start: Option<Address>, end: Option<Address> },
-    Numbered { start: Option<Address>, end: Option<Address> },
-    Delete { start: Option<Address>, end: Option<Address> },
-    Write { start: Option<Address>, end: Option<Address>, file: Option<String> },
-    Insert { before: Option<Address> },
-    Append { after: Option<Address> },
+    Jump {
+        address: Address,
+    },
+    Print {
+        start: Option<Address>,
+        end: Option<Address>,
+    },
+    Numbered {
+        start: Option<Address>,
+        end: Option<Address>,
+    },
+    Delete {
+        start: Option<Address>,
+        end: Option<Address>,
+    },
+    Write {
+        start: Option<Address>,
+        end: Option<Address>,
+        file: Option<String>,
+    },
+    Insert {
+        before: Option<Address>,
+    },
+    Append {
+        after: Option<Address>,
+    },
 }
 
 impl Command {
@@ -86,54 +105,66 @@ impl Command {
     fn jump(ed: &mut Red, addr: Address) -> Result<Action, failure::Error> {
         use self::Address::*;
         match addr {
-            CurrentLine => { /* Don't jump at all */ },
-            LastLine    => {
+            CurrentLine => { /* Don't jump at all */ }
+            LastLine => {
                 let new_line = ed.total_lines;
                 ed.set_line(new_line)?
-            },
+            }
             Numbered(n) => ed.set_line(n)?,
-            Offset(n)   => {
+            Offset(n) => {
                 let new_line = ed.current_line as isize + n;
                 if new_line < 1 {
-                    return Err(format_err!("Invalid address"))
+                    return Err(format_err!("Invalid address"));
                 }
                 ed.set_line(new_line as usize)?;
-            },
+            }
         }
 
         // After a jump, print the current line
         Self::print(ed, None, None)
     }
 
-    fn print(ed: &mut Red, start: Option<Address>, end: Option<Address>) -> Result<Action, failure::Error> {
+    fn print(
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+    ) -> Result<Action, failure::Error> {
         let stdout = io::stdout();
         let handle = stdout.lock();
         Self::write_range(handle, ed, start, end, false)
     }
 
-    fn numbered(ed: &mut Red, start: Option<Address>, end: Option<Address>) -> Result<Action, failure::Error> {
+    fn numbered(
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+    ) -> Result<Action, failure::Error> {
         let stdout = io::stdout();
         let handle = stdout.lock();
         Self::write_range(handle, ed, start, end, true)
     }
 
-    fn delete(ed: &mut Red, start: Option<Address>, end: Option<Address>) -> Result<Action, failure::Error> {
+    fn delete(
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+    ) -> Result<Action, failure::Error> {
         if ed.data.is_empty() {
-            return Err(format_err!("Invalid address"))
+            return Err(format_err!("Invalid address"));
         }
 
         match (start, end) {
             (None, None) => {
                 let line = ed.current_line;
-                ed.data.remove(line-1);
+                ed.data.remove(line - 1);
                 ed.dirty = true;
                 ed.total_lines = ed.data.len();
                 ed.current_line = cmp::min(line, ed.data.len());
-            },
+            }
 
             (Some(start), None) => {
                 let line = Self::get_actual_line(&ed, start)?;
-                ed.data.remove(line-1);
+                ed.data.remove(line - 1);
                 ed.dirty = true;
                 ed.total_lines = ed.data.len();
                 ed.current_line = cmp::min(line, ed.data.len());
@@ -156,7 +187,7 @@ impl Command {
                 let end = Self::get_actual_line(&ed, end)?;
 
                 for _ in start..=end {
-                    ed.data.remove(start-1);
+                    ed.data.remove(start - 1);
                 }
 
                 ed.dirty = true;
@@ -167,18 +198,20 @@ impl Command {
         Ok(Action::Continue)
     }
 
-    fn write(ed: &mut Red, mut start: Option<Address>, mut end: Option<Address>, file: Option<String>)
-        -> Result<Action, failure::Error> {
-
+    fn write(
+        ed: &mut Red,
+        mut start: Option<Address>,
+        mut end: Option<Address>,
+        file: Option<String>,
+    ) -> Result<Action, failure::Error> {
         let file = file.or(ed.path.clone());
         match file {
             None => return Ok(Action::Unknown),
             Some(path) => {
-
                 // By default, write the whole buffer
                 if start.is_none() && end.is_none() {
                     start = Some(Address::Numbered(1));
-                    end   = Some(Address::LastLine);
+                    end = Some(Address::LastLine);
                 }
 
                 debug!("Writing to file {:?} ({:?}..{:?})", path, start, end);
@@ -197,7 +230,9 @@ impl Command {
     }
 
     fn insert(ed: &mut Red, before: Option<Address>) -> Result<Action, failure::Error> {
-        let mut addr = before.map(|addr| Self::get_actual_line(&ed, addr)).unwrap_or(Ok(ed.current_line))?;
+        let mut addr = before
+            .map(|addr| Self::get_actual_line(&ed, addr))
+            .unwrap_or(Ok(ed.current_line))?;
         // Insert after the previous line
         if addr > 1 {
             addr -= 1;
@@ -208,18 +243,23 @@ impl Command {
     }
 
     fn append(ed: &mut Red, after: Option<Address>) -> Result<Action, failure::Error> {
-        let addr = after.map(|addr| Self::get_actual_line(&ed, addr)).unwrap_or(Ok(ed.current_line))?;
+        let addr = after
+            .map(|addr| Self::get_actual_line(&ed, addr))
+            .unwrap_or(Ok(ed.current_line))?;
         ed.current_line = addr;
         ed.mode = Mode::Input;
         Ok(Action::Continue)
     }
 
-    fn write_range<W: Write>(mut output: W,
-                             ed: &mut Red,
-                             start: Option<Address>, end: Option<Address>, show_number: bool)
-        -> Result<Action, failure::Error> {
+    fn write_range<W: Write>(
+        mut output: W,
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+        show_number: bool,
+    ) -> Result<Action, failure::Error> {
         if ed.data.is_empty() {
-            return Err(format_err!("Invalid address"))
+            return Err(format_err!("Invalid address"));
         }
 
         match (start, end) {
@@ -228,7 +268,7 @@ impl Command {
                     write!(output, "{}\t", ed.current_line)?;
                 }
                 writeln!(output, "{}", ed.get_line(ed.current_line).unwrap())?;
-            },
+            }
 
             (Some(start), None) => {
                 ed.current_line = Self::get_actual_line(&ed, start)?;
@@ -250,7 +290,6 @@ impl Command {
                 }
 
                 ed.current_line = end;
-
             }
 
             (Some(start), Some(end)) => {
@@ -265,7 +304,6 @@ impl Command {
                 }
 
                 ed.current_line = end;
-
             }
         }
 
@@ -282,7 +320,7 @@ impl Command {
                     return Err(format_err!("Invalid address"));
                 }
                 Ok(n)
-            },
+            }
             Offset(n) => {
                 let line = ed.current_line as isize + n;
                 if line < 1 {
@@ -295,8 +333,7 @@ impl Command {
                 }
 
                 Ok(line)
-            },
+            }
         }
-
     }
 }
