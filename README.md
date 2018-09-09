@@ -10,7 +10,7 @@ Some of the history of *ed* is discussed in the article ["Where Vim Came From"](
 ## Installation
 
 ```
-cargo install --git https://github.com/badboy/red
+cargo install red-editor
 ```
 
 ## Usage
