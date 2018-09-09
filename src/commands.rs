@@ -92,7 +92,7 @@ impl Command {
     }
 
     fn noop(ed: &mut Red) -> Result<Action, failure::Error> {
-        if ed.current_line < ed.total_lines {
+        if ed.current_line < ed.lines() {
             ed.current_line += 1;
             Self::print(ed, None, None)
         } else {
@@ -121,7 +121,7 @@ impl Command {
         match addr {
             CurrentLine => { /* Don't jump at all */ }
             LastLine => {
-                let new_line = ed.total_lines;
+                let new_line = ed.lines();
                 ed.set_line(new_line)?
             }
             Numbered(n) => ed.set_line(n)?,
@@ -172,7 +172,6 @@ impl Command {
                 let line = ed.current_line;
                 ed.data.remove(line - 1);
                 ed.dirty = true;
-                ed.total_lines = ed.data.len();
                 ed.current_line = cmp::min(line, ed.data.len());
             }
 
@@ -180,7 +179,6 @@ impl Command {
                 let line = Self::get_actual_line(&ed, start)?;
                 ed.data.remove(line - 1);
                 ed.dirty = true;
-                ed.total_lines = ed.data.len();
                 ed.current_line = cmp::min(line, ed.data.len());
             }
 
@@ -192,7 +190,6 @@ impl Command {
                 }
 
                 ed.dirty = true;
-                ed.total_lines = ed.data.len();
                 ed.current_line = cmp::min(end, ed.data.len());
             }
 
@@ -205,7 +202,6 @@ impl Command {
                 }
 
                 ed.dirty = true;
-                ed.total_lines = ed.data.len();
                 ed.current_line = cmp::min(start, ed.data.len());
             }
         }
@@ -322,7 +318,6 @@ impl Command {
         }
 
         ed.dirty = true;
-        ed.total_lines = ed.data.len();
         ed.current_line = addr;
         println!("{}", written);
 
@@ -392,9 +387,9 @@ impl Command {
         use self::Address::*;
         match addr {
             CurrentLine => Ok(ed.current_line),
-            LastLine => Ok(ed.total_lines),
+            LastLine => Ok(ed.lines()),
             Numbered(n) => {
-                if n > ed.total_lines {
+                if n > ed.lines() {
                     return Err(format_err!("Invalid address"));
                 }
                 Ok(n)
@@ -406,7 +401,7 @@ impl Command {
                 }
 
                 let line = line as usize;
-                if line > ed.total_lines {
+                if line > ed.lines() {
                     return Err(format_err!("Invalid address"));
                 }
 

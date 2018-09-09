@@ -11,7 +11,6 @@ use tokenizer;
 pub struct Red {
     prompt: String,
     pub current_line: usize,
-    pub total_lines: usize,
     pub data: Vec<String>,
     pub mode: Mode,
     pub path: Option<String>,
@@ -41,7 +40,6 @@ impl Red {
             data,
             path,
             current_line: len,
-            total_lines: len,
             mode: Mode::Command,
             dirty: false,
             last_error: None,
@@ -60,7 +58,6 @@ impl Red {
         let len = data.len();
         self.path = Some(path);
         self.data = data;
-        self.total_lines = len;
         self.current_line = len;
 
         Ok(())
@@ -70,8 +67,12 @@ impl Red {
         self.data.iter().map(|l| l.len() + 1).sum()
     }
 
+    pub fn lines(&self) -> usize {
+        self.data.len()
+    }
+
     pub fn set_line(&mut self, line: usize) -> Result<(), failure::Error> {
-        if line < 1 || line > self.total_lines {
+        if line < 1 || line > self.lines() {
             Err(format_err!("Invalid address"))
         } else {
             self.current_line = line;
@@ -80,7 +81,7 @@ impl Red {
     }
 
     pub fn get_line(&self, line: usize) -> Option<&str> {
-        if line > 0 && line <= self.total_lines {
+        if line > 0 && line <= self.lines() {
             Some(&self.data[line - 1])
         } else {
             None
@@ -114,7 +115,6 @@ impl Red {
             self.data.insert(idx, line.into());
         }
         self.current_line += 1;
-        self.total_lines = self.data.len();
         self.dirty = true;
 
         Ok(Action::Continue)
