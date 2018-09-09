@@ -59,6 +59,10 @@ pub enum Command {
     Edit {
         file: Option<String>,
     },
+    Change {
+        start: Option<Address>,
+        end: Option<Address>,
+    },
 }
 
 impl Command {
@@ -78,6 +82,7 @@ impl Command {
             Insert { before } => Self::insert(ed, before),
             Append { after } => Self::append(ed, after),
             Edit { file } => Self::edit(ed, file),
+            Change { start, end } => Self::change(ed, start, end),
         }
     }
 
@@ -264,6 +269,21 @@ impl Command {
         };
         ed.load_file(file)?;
 
+        Ok(Action::Continue)
+    }
+
+    fn change(
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+    ) -> Result<Action, failure::Error> {
+        Self::delete(ed, start, end)?;
+        let mut addr = ed.current_line;
+        if addr > 1 {
+            addr -= 1;
+        }
+        ed.set_line(addr)?;
+        ed.mode = Mode::Input;
         Ok(Action::Continue)
     }
 

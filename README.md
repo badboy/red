@@ -37,6 +37,7 @@ q
 * `(.)i` - Insert text before the addressed line. End text input with a single `.` in a line.
 * `h` - Write a short message to standard output that explains the reason for the most recent `?`.
 * `e [file]` - Delete the entire contents of the buffer and read the specified file into the buffer.
+* `(.,.)c` - Delete the addressed line, then accept input text to replace these lines.
 
 ## Not (yet) implemented
 
@@ -44,7 +45,6 @@ q
 * `(.,.)g/RE/command` - Global regular expression search.
 * `'x` - Marking lines with a name.
 * `(.)r [file]` - Read contents of another file and insert into the buffer.
-* `(.,.)c` - Delete the addressed line, then accept input text to replace these lines.
 
 ## License
 

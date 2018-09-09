@@ -93,6 +93,7 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
         'h' => Command::Help,
         'q' => Command::Quit,
         'e' => Command::Edit { file: arg },
+        'c' => Command::Change { start, end },
         _ => Command::Noop,
     };
     Ok(cmd)
