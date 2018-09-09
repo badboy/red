@@ -29,6 +29,8 @@ q
 
 ## Available commands
 
+* `q` - Quit the editor. If the buffer has changed since the last time it was written, a warning is saved and the editor is not quit. A successive `q` command will exit.
+* `Q` - Quit the editor without checking whether changes are unsaved.
 * `(.,.)p` - Print the addressed lines to standard output.
 * `(.,.)n` - Print the addressed lines to standard output, preceding each line by its line number and a &lt;tab&gt;.
 * `(.,.)d` - Delete the addressed lines from the buffer.

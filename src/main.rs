@@ -78,7 +78,8 @@ fn main() -> Result<(), ExitFailure> {
             }
             Err(ReadlineError::Eof) => {
                 debug!("EOF send.");
-                match Command::Quit.execute(&mut ed) {
+                let cmd = Command::Quit { force: false };
+                match cmd.execute(&mut ed) {
                     Err(err) => {
                         ed.last_error = Some(err.to_string());
                         println!("?");

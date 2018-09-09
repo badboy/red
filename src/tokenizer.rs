@@ -10,6 +10,7 @@ static COMMANDS: &'static [char] = &[
     'c', // replace line
     'h', // show last error
     'q', // quit
+    'Q', // Force-quit
     'e', // edit file
     'c', // change
     'r', // read

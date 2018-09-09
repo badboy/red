@@ -28,7 +28,7 @@ pub enum Action {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
     Noop,
-    Quit,
+    Quit { force: bool },
     Help,
     Jump {
         address: Address,
@@ -82,7 +82,7 @@ impl Command {
         match self {
             Noop => Self::noop(ed),
             Help => Self::help(ed),
-            Quit => Self::quit(ed),
+            Quit { force }=> Self::quit(ed, force),
             Jump { address } => Self::jump(ed, address),
             Print { start, end } => Self::print(ed, start, end),
             Numbered { start, end } => Self::numbered(ed, start, end),
@@ -113,8 +113,8 @@ impl Command {
         Ok(Action::Continue)
     }
 
-    fn quit(ed: &mut Red) -> Result<Action, failure::Error> {
-        if ed.dirty {
+    fn quit(ed: &mut Red, force: bool) -> Result<Action, failure::Error> {
+        if !force && ed.dirty {
             ed.dirty = false;
             Err(format_err!("Warning: buffer modified"))
         } else {
@@ -425,6 +425,7 @@ impl Command {
             }
         }
 
+        ed.dirty = true;
         Ok(Action::Continue)
     }
 

@@ -95,7 +95,8 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
             after: end.or(start),
         },
         'h' => Command::Help,
-        'q' => Command::Quit,
+        'q' => Command::Quit { force: false },
+        'Q' => Command::Quit { force: true },
         'e' => Command::Edit { file: arg },
         'c' => Command::Change { start, end },
         'r' => Command::Read {
