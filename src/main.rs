@@ -3,6 +3,7 @@
 //! An `ed` clone, written in Rust.
 
 extern crate exitfailure;
+extern crate regex;
 extern crate rustyline;
 #[macro_use]
 extern crate failure;
