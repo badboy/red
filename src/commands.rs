@@ -12,13 +12,13 @@ pub enum Address {
     Offset(isize),
 }
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq,Eq)]
 pub enum Mode {
     Command,
     Input,
 }
 
-#[derive(Debug,Eq,PartialEq)]
+#[derive(Debug,PartialEq,Eq)]
 pub enum Action {
     Quit,
     Continue,

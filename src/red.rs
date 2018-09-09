@@ -116,3 +116,58 @@ impl Red {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn simple_edits() {
+        let mut ed = Red::new("".into(), None);
+
+        assert_eq!(Mode::Command, ed.mode);
+        ed.dispatch("i").unwrap();
+        assert_eq!(Mode::Input, ed.mode);
+        ed.dispatch("Some light text.").unwrap();
+        ed.dispatch(".").unwrap();
+        assert_eq!(Mode::Command, ed.mode);
+
+        let data = &ed.data;
+        assert_eq!("Some light text.", data[0]);
+    }
+
+    #[test]
+    fn complex_stuff() {
+        let mut ed = Red::new("".into(), None);
+
+        ed.dispatch("i").unwrap();
+        ed.dispatch("Line 1.").unwrap();
+        ed.dispatch("Line 2.").unwrap();
+        ed.dispatch("Line 4.").unwrap();
+        ed.dispatch(".").unwrap();
+        ed.dispatch("3i").unwrap();
+        ed.dispatch("Line 3.").unwrap();
+        ed.dispatch(".").unwrap();
+        ed.dispatch("0a").unwrap();
+        ed.dispatch("Line 0.").unwrap();
+        ed.dispatch(".").unwrap();
+
+        {
+            let data = &ed.data;
+            assert_eq!("Line 0.", data[0]);
+            assert_eq!("Line 1.", data[1]);
+            assert_eq!("Line 2.", data[2]);
+            assert_eq!("Line 3.", data[3]);
+            assert_eq!("Line 4.", data[4]);
+        }
+
+        ed.dispatch("3d").unwrap();
+
+        {
+            let data = &ed.data;
+            assert_eq!("Line 0.", data[0]);
+            assert_eq!("Line 1.", data[1]);
+            assert_eq!("Line 3.", data[2]);
+            assert_eq!("Line 4.", data[3]);
+        }
+    }
+}
