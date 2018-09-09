@@ -104,7 +104,7 @@ mod test {
 
     #[test]
     fn parse_empty() {
-        assert_eq!(Command::Noop, parse(&tokenize("")));
+        assert_eq!(Command::Noop, parse(&tokenize("").unwrap()));
     }
 
     #[test]
@@ -113,7 +113,7 @@ mod test {
             start: Some(Address::Numbered(1)),
             end: Some(Address::Numbered(2))
         },
-        parse(&tokenize("1,2p")));
+        parse(&tokenize("1,2p").unwrap()));
     }
 
     #[test]
@@ -123,33 +123,33 @@ mod test {
             end: None,
             file: Some("file.txt".into())
         },
-        parse(&tokenize("w file.txt")));
+        parse(&tokenize("w file.txt").unwrap()));
     }
 
     #[test]
     fn parse_append() {
         assert_eq!(Command::Append {
             after: Some(Address::Numbered(2)),
-        }, parse(&tokenize("1,2a")));
+        }, parse(&tokenize("1,2a").unwrap()));
 
         assert_eq!(Command::Append {
             after: None,
-        }, parse(&tokenize("a")));
+        }, parse(&tokenize("a").unwrap()));
 
 
         assert_eq!(Command::Append {
             after: Some(Address::Numbered(1)),
-        }, parse(&tokenize("1a")));
+        }, parse(&tokenize("1a").unwrap()));
     }
 
     #[test]
     fn parse_jumps() {
         assert_eq!(Command::Jump {
             address: Address::Numbered(2)
-        }, parse(&tokenize("2")));
+        }, parse(&tokenize("2").unwrap()));
 
         assert_eq!(Command::Jump {
             address: Address::CurrentLine
-        }, parse(&tokenize(".")));
+        }, parse(&tokenize(".").unwrap()));
     }
 }

@@ -96,17 +96,17 @@ impl Red {
         }
     }
 
-    fn parse_command(&self, line: &str) -> Command {
-        let tokens = tokenizer::tokenize(line);
+    fn parse_command(&self, line: &str) -> Result<Command, failure::Error> {
+        let tokens = tokenizer::tokenize(line)?;
         debug!("tokens: {:#?}", tokens);
         let command = parser::parse(&tokens);
         debug!("command: {:#?}", command);
 
-        command
+        Ok(command)
     }
 
     fn dispatch_command(&mut self, line: &str) -> Result<Action, failure::Error> {
-        let command = self.parse_command(line.trim());
+        let command = self.parse_command(line.trim())?;
         command.execute(self)
     }
 

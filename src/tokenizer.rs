@@ -1,3 +1,5 @@
+use failure;
+
 static COMMANDS : &'static [char] = &[
     'p', // print
     'n', // numbered print
@@ -25,7 +27,7 @@ pub enum Token<'a> {
     Argument(&'a str),
 }
 
-pub fn tokenize(line: &str) -> Vec<Token> {
+pub fn tokenize(line: &str) -> Result<Vec<Token>, failure::Error> {
     let mut res = vec![];
 
     let command_idx = line.find(|c: char| {
@@ -76,7 +78,7 @@ pub fn tokenize(line: &str) -> Vec<Token> {
         if SUFFIXES.contains(&suffix_char) {
             res.push(Token::Suffix(suffix_char));
         } else if suffix_char != ' ' {
-            panic!("Need a suffix character or whitespace");
+            return Err(format_err!("Invalid command suffix"));
         }
 
         let arg = line[after_cmd_idx+1..].trim();
@@ -85,7 +87,7 @@ pub fn tokenize(line: &str) -> Vec<Token> {
         }
     }
 
-    res
+    Ok(res)
 }
 
 #[cfg(test)]
@@ -95,7 +97,7 @@ mod test {
     #[test]
     fn empty() {
         let expected : Vec<Token>= vec![];
-        assert_eq!(expected, tokenize(""));
+        assert_eq!(expected, tokenize("").unwrap());
     }
 
     #[test]
@@ -104,7 +106,7 @@ mod test {
             Token::Address("1"),
         ];
 
-        assert_eq!(expected, tokenize("1"));
+        assert_eq!(expected, tokenize("1").unwrap());
     }
 
     #[test]
@@ -114,7 +116,7 @@ mod test {
             Token::Separator(','),
         ];
 
-        assert_eq!(expected, tokenize("1,"));
+        assert_eq!(expected, tokenize("1,").unwrap());
     }
 
     #[test]
@@ -124,7 +126,7 @@ mod test {
             Token::Address("$"),
         ];
 
-        assert_eq!(expected, tokenize(",$"));
+        assert_eq!(expected, tokenize(",$").unwrap());
     }
 
     #[test]
@@ -137,7 +139,7 @@ mod test {
             Token::Suffix('n'),
         ];
 
-        assert_eq!(expected, tokenize("1,$pn"));
+        assert_eq!(expected, tokenize("1,$pn").unwrap());
     }
 
     #[test]
@@ -146,7 +148,7 @@ mod test {
             Token::Command('p'),
         ];
 
-        assert_eq!(expected, tokenize("p"));
+        assert_eq!(expected, tokenize("p").unwrap());
     }
 
     #[test]
@@ -156,7 +158,7 @@ mod test {
             Token::Suffix('n'),
         ];
 
-        assert_eq!(expected, tokenize("pn"));
+        assert_eq!(expected, tokenize("pn").unwrap());
     }
 
     #[test]
@@ -166,13 +168,18 @@ mod test {
             Token::Argument("file.txt"),
         ];
 
-        assert_eq!(expected, tokenize("p file.txt"));
+        assert_eq!(expected, tokenize("p file.txt").unwrap());
     }
 
     #[test]
     #[should_panic]
-    // FIXME: tokenize should return a Result
     fn missing_whitespace_argument() {
-        tokenize("pfile.txt");
+        tokenize("pfile.txt").unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_suffix() {
+        tokenize("hello world").unwrap();
     }
 }
