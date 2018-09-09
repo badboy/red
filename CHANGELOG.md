@@ -1,3 +1,9 @@
+# Version 0.2.1 (2018-09-09)
+
+Bug fix:
+
+* Off-by-one errors in insert and change command
+
 # Version 0.2.0 (2018-09-09)
 
 New commands:
