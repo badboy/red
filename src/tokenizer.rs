@@ -12,6 +12,7 @@ static COMMANDS: &'static [char] = &[
     'q', // quit
     'e', // edit file
     'c', // change
+    'r', // read
 ];
 
 static SUFFIXES: &'static [char] = &['l', 'p', 'n'];

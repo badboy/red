@@ -63,6 +63,10 @@ pub enum Command {
         start: Option<Address>,
         end: Option<Address>,
     },
+    Read {
+        after: Option<Address>,
+        file: Option<String>,
+    },
 }
 
 impl Command {
@@ -83,6 +87,7 @@ impl Command {
             Append { after } => Self::append(ed, after),
             Edit { file } => Self::edit(ed, file),
             Change { start, end } => Self::change(ed, start, end),
+            Read { after, file } => Self::read(ed, after, file),
         }
     }
 
@@ -284,6 +289,42 @@ impl Command {
         }
         ed.set_line(addr)?;
         ed.mode = Mode::Input;
+        ed.dirty = true;
+        Ok(Action::Continue)
+    }
+
+    fn read(
+        ed: &mut Red,
+        after: Option<Address>,
+        file: Option<String>,
+    ) -> Result<Action, failure::Error> {
+        let file = file.or_else(|| ed.path.clone());
+
+        let file = match file {
+            None => return Err(format_err!("No current filename")),
+            Some(file) => file,
+        };
+        let data = ed.load_data(&file)?;
+
+        let mut addr = after.map(|addr| Self::get_actual_line(&ed, addr))
+            .unwrap_or_else(|| Ok(ed.current_line))?;
+
+        let mut written = 0;
+        for line in data {
+            written += line.len() + 1;
+            if ed.data.is_empty() {
+                ed.data.push(line);
+            } else {
+                ed.data.insert(addr, line);
+            }
+            addr += 1;
+        }
+
+        ed.dirty = true;
+        ed.total_lines = ed.data.len();
+        ed.current_line = addr;
+        println!("{}", written);
+
         Ok(Action::Continue)
     }
 

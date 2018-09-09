@@ -48,11 +48,15 @@ impl Red {
         }
     }
 
-    pub fn load_file(&mut self, path: String) -> Result<(), failure::Error> {
-        let file = File::open(&path)?;
+    pub fn load_data(&self, path: &str) -> Result<Vec<String>, failure::Error> {
+        let file = File::open(path)?;
         let reader = BufReader::new(file);
-        let data = reader.lines().map(|l| l.unwrap()).collect::<Vec<_>>();
+        let data = reader.lines().map(|l| l.unwrap()).collect();
+        Ok(data)
+    }
 
+    pub fn load_file(&mut self, path: String) -> Result<(), failure::Error> {
+        let data = self.load_data(&path)?;
         let len = data.len();
         self.path = Some(path);
         self.data = data;
