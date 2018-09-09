@@ -1,6 +1,6 @@
 [package]
 authors = ["Jan-Erik Rediger <janerik@fnordig.de>"]
-name = "red"
+name = "red-editor"
 version = "0.1.0"
 
 [dependencies]
@@ -10,3 +10,6 @@ failure = "0.1.2"
 log = "0.4.5"
 rustyline = "2.0.1"
 structopt = "0.2.10"
+
+[[bin]]
+name = "red"
