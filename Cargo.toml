@@ -25,3 +25,4 @@ structopt = "0.2.10"
 
 [[bin]]
 name = "red"
+path = "src/main.rs"
