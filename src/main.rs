@@ -26,7 +26,7 @@ mod tokenizer;
 use commands::{Action, Command};
 use red::Red;
 
-/// Command line parser.
+/// A Rust Editor.
 #[derive(Debug, StructOpt)]
 pub struct Cli {
     /// file
