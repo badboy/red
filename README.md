@@ -45,6 +45,7 @@ q
 * `/` - Addressing lines by search.
 * `(.,.)g/RE/command` - Global regular expression search.
 * `'x` - Marking lines with a name.
+* `(.,.)maddress` - Move the addressed lines after the line addressed by `address`.
 
 ## License
 
