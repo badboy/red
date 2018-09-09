@@ -35,13 +35,14 @@ impl Red {
             }
         };
 
+        let len = data.len();
         Red {
-            prompt: prompt,
-            current_line: data.len(),
-            total_lines: data.len(),
-            data: data,
+            prompt,
+            data,
+            path,
+            current_line: len,
+            total_lines: len,
             mode: Mode::Command,
-            path: path,
             dirty: false,
             last_error: None,
         }

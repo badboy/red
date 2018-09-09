@@ -58,7 +58,7 @@ pub fn tokenize(line: &str) -> Result<Vec<Token>, failure::Error> {
     let after_cmd_idx = match command_idx {
         None => line.len(),
         Some(idx) => {
-            let cmd = &line[idx..idx + 1];
+            let cmd = &line[idx..=idx];
             let cmd = cmd.chars().next().unwrap();
             res.push(Token::Command(cmd));
             idx + 1
@@ -66,10 +66,7 @@ pub fn tokenize(line: &str) -> Result<Vec<Token>, failure::Error> {
     };
 
     if after_cmd_idx < line.len() {
-        let suffix_char = line[after_cmd_idx..after_cmd_idx + 1]
-            .chars()
-            .next()
-            .unwrap();
+        let suffix_char = line[after_cmd_idx..=after_cmd_idx].chars().next().unwrap();
         if SUFFIXES.contains(&suffix_char) {
             res.push(Token::Suffix(suffix_char));
         } else if suffix_char != ' ' {

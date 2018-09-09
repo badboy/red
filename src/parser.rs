@@ -66,7 +66,7 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
     }
 
     let cmd = match cmd {
-        None if start.is_some() && !end.is_some() => {
+        None if start.is_some() && end.is_none() => {
             return Ok(Command::Jump {
                 address: start.unwrap(),
             });

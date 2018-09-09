@@ -4,7 +4,7 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use Red;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Address {
     CurrentLine,
     LastLine,
@@ -96,7 +96,7 @@ impl Command {
     fn quit(ed: &mut Red) -> Result<Action, failure::Error> {
         if ed.dirty {
             ed.dirty = false;
-            return Err(format_err!("Warning: buffer modified"));
+            Err(format_err!("Warning: buffer modified"))
         } else {
             Ok(Action::Quit)
         }
@@ -204,9 +204,9 @@ impl Command {
         mut end: Option<Address>,
         file: Option<String>,
     ) -> Result<Action, failure::Error> {
-        let file = file.or(ed.path.clone());
+        let file = file.or_else(|| ed.path.clone());
         match file {
-            None => return Ok(Action::Unknown),
+            None => Ok(Action::Unknown),
             Some(path) => {
                 // By default, write the whole buffer
                 if start.is_none() && end.is_none() {
@@ -232,7 +232,7 @@ impl Command {
     fn insert(ed: &mut Red, before: Option<Address>) -> Result<Action, failure::Error> {
         let mut addr = before
             .map(|addr| Self::get_actual_line(&ed, addr))
-            .unwrap_or(Ok(ed.current_line))?;
+            .unwrap_or_else(|| Ok(ed.current_line))?;
         // Insert after the previous line
         if addr > 1 {
             addr -= 1;
@@ -245,7 +245,7 @@ impl Command {
     fn append(ed: &mut Red, after: Option<Address>) -> Result<Action, failure::Error> {
         let addr = after
             .map(|addr| Self::get_actual_line(&ed, addr))
-            .unwrap_or(Ok(ed.current_line))?;
+            .unwrap_or_else(|| Ok(ed.current_line))?;
         ed.current_line = addr;
         ed.mode = Mode::Input;
         Ok(Action::Continue)
