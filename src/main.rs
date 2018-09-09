@@ -1,6 +1,6 @@
-/// red - A Rust Editor
-///
-/// An `ed` clone, written in Rust.
+//! red - A Rust Editor
+//!
+//! An `ed` clone, written in Rust.
 
 extern crate rustyline;
 extern crate exitfailure;
