@@ -28,7 +28,9 @@ pub enum Action {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
     Noop,
-    Quit { force: bool },
+    Quit {
+        force: bool,
+    },
     Help,
     Jump {
         address: Address,
@@ -82,7 +84,7 @@ impl Command {
         match self {
             Noop => Self::noop(ed),
             Help => Self::help(ed),
-            Quit { force }=> Self::quit(ed, force),
+            Quit { force } => Self::quit(ed, force),
             Jump { address } => Self::jump(ed, address),
             Print { start, end } => Self::print(ed, start, end),
             Numbered { start, end } => Self::numbered(ed, start, end),
@@ -334,7 +336,7 @@ impl Command {
         ed: &mut Red,
         start: Option<Address>,
         end: Option<Address>,
-        dest: Address
+        dest: Address,
     ) -> Result<Action, failure::Error> {
         if ed.data.is_empty() {
             return Ok(Action::Continue);
@@ -350,7 +352,7 @@ impl Command {
                 if line_no == dest {
                     return Err(format_err!("Invalid destination"));
                 }
-                let line = ed.data.remove(line_no-1);
+                let line = ed.data.remove(line_no - 1);
                 if dest > line_no {
                     dest -= 1;
                 }
@@ -366,7 +368,7 @@ impl Command {
                 if line_no == dest {
                     return Err(format_err!("Invalid destination"));
                 }
-                let line = ed.data.remove(line_no-1);
+                let line = ed.data.remove(line_no - 1);
                 if dest > line_no {
                     dest -= 1;
                 }
@@ -410,7 +412,7 @@ impl Command {
                 }
 
                 for _ in start..=end {
-                    lines.push(ed.data.remove(start-1));
+                    lines.push(ed.data.remove(start - 1));
                 }
 
                 if end < dest {

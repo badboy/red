@@ -110,11 +110,7 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
             };
             let dest = parse_address(&suffix)?;
 
-            Command::Move {
-                start,
-                end,
-                dest,
-            }
+            Command::Move { start, end, dest }
         }
         _ => Command::Noop,
     };
