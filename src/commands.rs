@@ -295,10 +295,10 @@ impl Command {
     ) -> Result<Action, failure::Error> {
         Self::delete(ed, start, end)?;
         let mut addr = ed.current_line;
-        if addr > 1 {
+        if addr > 0 {
             addr -= 1;
         }
-        ed.set_line(addr)?;
+        ed.current_line = addr;
         ed.mode = Mode::Input;
         ed.dirty = true;
         Ok(Action::Continue)

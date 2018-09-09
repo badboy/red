@@ -109,6 +109,7 @@ impl Red {
         }
 
         let idx = self.current_line;
+        debug!("Inserting line at {}", idx);
         if self.data.is_empty() {
             self.data.push(line.into());
         } else {
@@ -187,6 +188,36 @@ mod test {
             assert_eq!("Line 1.", data[1]);
             assert_eq!("Line 3.", data[2]);
             assert_eq!("Line 4.", data[3]);
+        }
+    }
+
+    #[test]
+    fn change_line() {
+        let mut ed = Red::new("".into(), None);
+
+        ed.dispatch("a").unwrap();
+        ed.dispatch("Line 1").unwrap();
+        ed.dispatch("Line 2").unwrap();
+        ed.dispatch("Line 3").unwrap();
+        ed.dispatch("Line 4").unwrap();
+        ed.dispatch(".").unwrap();
+
+        {
+            ed.dispatch("2c").unwrap();
+            ed.dispatch("world").unwrap();
+            ed.dispatch(".").unwrap();
+
+            let data = &ed.data;
+            assert_eq!(vec!["Line 1", "world", "Line 3", "Line 4"], &data[..]);
+        }
+
+        {
+            ed.dispatch("1c").unwrap();
+            ed.dispatch("hello").unwrap();
+            ed.dispatch(".").unwrap();
+
+            let data = &ed.data;
+            assert_eq!(vec!["hello", "world", "Line 3", "Line 4"], &data[..]);
         }
     }
 }
