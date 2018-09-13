@@ -111,7 +111,7 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
             let dest = parse_address(&suffix)?;
 
             Command::Move { start, end, dest }
-        }
+        },
         's' => {
             let mut suffix = match suffix {
                 None => {
@@ -129,6 +129,28 @@ pub fn parse(tokens: &[Token]) -> Result<Command, failure::Error> {
             }
 
             Command::Substitute {
+                start,
+                end,
+                arg: Some(suffix),
+            }
+        },
+        'g' => {
+            let mut suffix = match suffix {
+                None => {
+                    return Ok(Command::Global {
+                        start,
+                        end,
+                        arg: None,
+                    })
+                }
+                Some(suffix) => suffix,
+            };
+            if let Some(arg) = arg {
+                suffix.push_str(" ");
+                suffix.push_str(&arg);
+            }
+
+            Command::Global {
                 start,
                 end,
                 arg: Some(suffix),

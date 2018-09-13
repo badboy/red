@@ -80,6 +80,11 @@ pub enum Command {
         end: Option<Address>,
         arg: Option<String>,
     },
+    Global {
+        start: Option<Address>,
+        end: Option<Address>,
+        arg: Option<String>,
+    },
 }
 
 impl Command {
@@ -103,6 +108,7 @@ impl Command {
             Read { after, file } => Self::read(ed, after, file),
             Move { start, end, dest } => Self::move_lines(ed, start, end, dest),
             Substitute { start, end, arg } => Self::substitute(ed, start, end, arg),
+            Global { start, end, arg } => Self::global(ed, start, end, arg),
         }
     }
 
@@ -516,6 +522,65 @@ impl Command {
         } else {
             Err(format_err!("No match"))
         }
+    }
+
+    fn global(
+        ed: &mut Red,
+        start: Option<Address>,
+        end: Option<Address>,
+        arg: Option<String>,
+    ) -> Result<Action, failure::Error> {
+        let arg = match arg {
+            None => return Err(format_err!("No previous substitution")),
+            Some(arg) => arg,
+        };
+
+        if &arg[0..=0] != "/" {
+            return Err(format_err!("Missing pattern delimiter"));
+        }
+        let arg = &arg[1..];
+        let regex_end = match arg.find(|c| c == '/') {
+            None => return Err(format_err!("Missing pattern delimiter")),
+            Some(idx) => idx,
+        };
+        let re = &arg[..regex_end];
+        debug!("Regex: {:?}", re);
+
+        let command_list = &arg[regex_end + 1..];
+
+        debug!("Command list: {:?}", command_list);
+
+        let re = Regex::new(re).map_err(|_| format_err!("No match"))?;
+
+        let mut start = start
+            .map(|addr| Self::get_actual_line(&ed, addr))
+            .unwrap_or_else(|| Self::get_actual_line(&ed, Address::Numbered(1)))?;
+        let end = end
+            .map(|addr| Self::get_actual_line(&ed, addr))
+            .unwrap_or_else(|| Self::get_actual_line(&ed, Address::LastLine))?;
+
+        if start == 0 {
+            return Err(format_err!("Invalid address"));
+        }
+        start -= 1;
+        debug!("Global in range: {}..{}", start, end);
+
+        let marked = ed.data[start..end].iter().zip(start..end).flat_map(|(line, idx)| {
+            if re.is_match(line) {
+                Some(idx)
+            } else {
+                None
+            }
+        }).collect::<Vec<usize>>();
+
+        debug!("Found {} matches", marked.len());
+
+        for idx in marked {
+            ed.set_line(idx+1)?;
+            println!("{}\t{}", idx+1, ed.get_line(idx+1).unwrap());
+        }
+
+        Ok(Action::Continue)
     }
 
     fn write_range<W: Write>(
