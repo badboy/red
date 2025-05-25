@@ -15,7 +15,7 @@ extern crate structopt;
 
 use exitfailure::ExitFailure;
 use rustyline::error::ReadlineError;
-use rustyline::Editor;
+use rustyline::DefaultEditor;
 use structopt::StructOpt;
 
 mod commands;
@@ -40,7 +40,7 @@ fn main() -> Result<(), ExitFailure> {
     env_logger::init();
 
     let args = Cli::from_args();
-    let mut rl = Editor::<()>::new();
+    let mut rl = DefaultEditor::new()?;
     let mut ed = Red::new(args.prompt, args.path);
 
     let size = ed.data_size();

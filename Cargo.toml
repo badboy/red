@@ -7,6 +7,7 @@ repository = "https://github.com/badboy/red"
 homepage = "https://github.com/badboy/red"
 license = "MIT"
 readme = "README.md"
+edition = "2015"
 
 include = [
   "Cargo.toml",
@@ -21,7 +22,7 @@ exitfailure = "0.5.1"
 failure = "0.1.2"
 log = "0.4.5"
 regex = "1.0.5"
-rustyline = "2.0.1"
+rustyline = "15.0.0"
 structopt = "0.2.10"
 
 [[bin]]
