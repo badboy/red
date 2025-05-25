@@ -17,13 +17,13 @@ include = [
 ]
 
 [dependencies]
-env_logger = "0.5.13"
+env_logger = "0.11.8"
 exitfailure = "0.5.1"
-failure = "0.1.2"
-log = "0.4.5"
-regex = "1.0.5"
+failure = "0.1.8"
+log = "0.4.27"
+regex = "1.11.1"
 rustyline = "15.0.0"
-structopt = "0.2.10"
+structopt = "0.3.26"
 
 [[bin]]
 name = "red"
