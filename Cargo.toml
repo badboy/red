@@ -7,7 +7,7 @@ repository = "https://github.com/badboy/red"
 homepage = "https://github.com/badboy/red"
 license = "MIT"
 readme = "README.md"
-edition = "2015"
+edition = "2018"
 
 include = [
   "Cargo.toml",

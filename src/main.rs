@@ -2,21 +2,11 @@
 //!
 //! An `ed` clone, written in Rust.
 
-extern crate exitfailure;
-extern crate regex;
-extern crate rustyline;
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
-#[macro_use]
-extern crate structopt;
-
 use exitfailure::ExitFailure;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use structopt::StructOpt;
+use failure::format_err;
 
 mod commands;
 mod parser;
@@ -49,14 +39,14 @@ fn main() -> Result<(), ExitFailure> {
     }
 
     loop {
-        debug!("Ed: {:?}", ed);
+        log::debug!("Ed: {:?}", ed);
         let readline = rl.readline(ed.prompt());
         match readline {
             Ok(line) => {
-                debug!("Line: {:?}", line);
+                log::debug!("Line: {:?}", line);
                 match ed.dispatch(&line) {
                     Ok(res) => {
-                        debug!("Result: {:?}", res);
+                        log::debug!("Result: {:?}", res);
 
                         match res {
                             Action::Quit => break,
@@ -67,18 +57,18 @@ fn main() -> Result<(), ExitFailure> {
                         }
                     }
                     Err(err) => {
-                        debug!("Saving error: {:?}", err);
+                        log::debug!("Saving error: {:?}", err);
                         ed.last_error = Some(err.to_string());
                         println!("?");
                     }
                 }
             }
             Err(ReadlineError::Interrupted) => {
-                debug!("Readline Interrupted");
+                log::debug!("Readline Interrupted");
                 println!("?");
             }
             Err(ReadlineError::Eof) => {
-                debug!("EOF send.");
+                log::debug!("EOF send.");
                 let cmd = Command::Quit { force: false };
                 match cmd.execute(&mut ed) {
                     Err(err) => {
@@ -90,7 +80,7 @@ fn main() -> Result<(), ExitFailure> {
                 }
             }
             Err(err) => {
-                debug!("Unknown error: {:?}", err);
+                log::debug!("Unknown error: {:?}", err);
                 Err(format_err!("Error: {:?}", err))?;
             }
         }

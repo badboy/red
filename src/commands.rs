@@ -1,9 +1,10 @@
-use failure;
+use failure::format_err;
+
 use regex::Regex;
 use std::cmp;
 use std::fs::{self, File};
 use std::io::{self, Write};
-use Red;
+use crate::Red;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Address {
@@ -84,7 +85,7 @@ pub enum Command {
 
 impl Command {
     pub fn execute(self, ed: &mut Red) -> Result<Action, failure::Error> {
-        debug!("Command::execute: {:?}", self);
+        log::debug!("Command::execute: {:?}", self);
         use Command::*;
 
         match self {
@@ -239,7 +240,7 @@ impl Command {
                     end = Some(Address::LastLine);
                 }
 
-                debug!("Writing to file {:?} ({:?}..{:?})", path, start, end);
+                log::debug!("Writing to file {:?} ({:?}..{:?})", path, start, end);
 
                 let file = File::create(&path)?;
                 Self::write_range(file, ed, start, end, false)?;
@@ -350,12 +351,12 @@ impl Command {
         }
 
         let mut dest = Self::get_actual_line(&ed, dest)?;
-        debug!("Moving after line {}", dest);
+        log::debug!("Moving after line {}", dest);
 
         match (start, end) {
             (None, None) => {
                 let line_no = ed.current_line;
-                debug!("Moving line {} to {}", line_no, dest);
+                log::debug!("Moving line {} to {}", line_no, dest);
                 if line_no == dest {
                     return Err(format_err!("Invalid destination"));
                 }
@@ -364,14 +365,14 @@ impl Command {
                     dest -= 1;
                 }
 
-                debug!("After adjustment: Moving line {} to {}", line_no, dest);
+                log::debug!("After adjustment: Moving line {} to {}", line_no, dest);
                 ed.data.insert(dest, line);
                 ed.set_line(dest)?;
             }
 
             (Some(start), None) => {
                 let line_no = Self::get_actual_line(&ed, start)?;
-                debug!("Moving line {} to {}", line_no, dest);
+                log::debug!("Moving line {} to {}", line_no, dest);
                 if line_no == dest {
                     return Err(format_err!("Invalid destination"));
                 }
@@ -379,7 +380,7 @@ impl Command {
                 if dest > line_no {
                     dest -= 1;
                 }
-                debug!("After adjustment: Moving line {} to {}", line_no, dest);
+                log::debug!("After adjustment: Moving line {} to {}", line_no, dest);
                 ed.data.insert(dest, line);
                 let dest = cmp::max(dest, 1);
                 ed.set_line(dest)?;
@@ -388,7 +389,7 @@ impl Command {
             (None, Some(end)) => {
                 let mut lines = vec![];
                 let end = Self::get_actual_line(&ed, end)?;
-                debug!("Moving lines 1..{} to {}", end, dest);
+                log::debug!("Moving lines 1..{} to {}", end, dest);
 
                 if dest <= end {
                     return Err(format_err!("Invalid destination"));
@@ -399,7 +400,7 @@ impl Command {
                 }
 
                 dest -= lines.len();
-                debug!("New destination after adjustment: {}", dest);
+                log::debug!("New destination after adjustment: {}", dest);
                 for line in lines {
                     ed.data.insert(dest, line);
                     dest += 1;
@@ -412,7 +413,7 @@ impl Command {
                 let mut lines = vec![];
                 let start = Self::get_actual_line(&ed, start)?;
                 let end = Self::get_actual_line(&ed, end)?;
-                debug!("Moving lines {}..{} to {}", start, end, dest);
+                log::debug!("Moving lines {}..{} to {}", start, end, dest);
 
                 if dest >= start && dest <= end {
                     return Err(format_err!("Invalid destination"));
@@ -425,7 +426,7 @@ impl Command {
                 if end < dest {
                     dest -= lines.len();
                 }
-                debug!("New destination after adjustment: {}", dest);
+                log::debug!("New destination after adjustment: {}", dest);
                 for line in lines {
                     ed.data.insert(dest, line);
                     dest += 1;
@@ -458,7 +459,7 @@ impl Command {
             Some(idx) => idx,
         };
         let re = &arg[..regex_end];
-        debug!("Regex: {:?}", re);
+        log::debug!("Regex: {:?}", re);
 
         let mut replacement = &arg[regex_end + 1..];
         let flags = match replacement.find(|c| c == '/') {
@@ -470,8 +471,8 @@ impl Command {
             }
         };
 
-        debug!("Replacement: {:?}", replacement);
-        debug!("Flags: {:?}", flags);
+        log::debug!("Replacement: {:?}", replacement);
+        log::debug!("Flags: {:?}", flags);
 
         let re = Regex::new(re).map_err(|_| format_err!("No match"))?;
         let all = flags.chars().any(|c| c == 'g');
@@ -487,7 +488,7 @@ impl Command {
             return Err(format_err!("Invalid address"));
         }
         start -= 1;
-        debug!("Replacement in range: {}..{}", start, end);
+        log::debug!("Replacement in range: {}..{}", start, end);
 
         let mut modified = None;
         for (line, idx) in ed.data[start..end].iter_mut().zip(start..end) {

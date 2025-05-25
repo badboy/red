@@ -2,10 +2,11 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-use commands::{Action, Command, Mode};
-use failure;
-use parser;
-use tokenizer;
+use failure::format_err;
+
+use crate::commands::{Action, Command, Mode};
+use crate::parser;
+use crate::tokenizer;
 
 #[derive(Debug)]
 pub struct Red {
@@ -90,9 +91,9 @@ impl Red {
 
     fn parse_command(&self, line: &str) -> Result<Command, failure::Error> {
         let tokens = tokenizer::tokenize(line)?;
-        debug!("tokens: {:#?}", tokens);
+        log::debug!("tokens: {:#?}", tokens);
         let command = parser::parse(&tokens)?;
-        debug!("parsed command: {:#?}", command);
+        log::debug!("parsed command: {:#?}", command);
 
         Ok(command)
     }
@@ -109,7 +110,7 @@ impl Red {
         }
 
         let idx = self.current_line;
-        debug!("Inserting line at {}", idx);
+        log::debug!("Inserting line at {}", idx);
         if self.data.is_empty() {
             self.data.push(line.into());
         } else {

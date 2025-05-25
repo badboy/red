@@ -1,8 +1,8 @@
-use failure;
+use failure::format_err;
 
-use commands::Address;
-use commands::Command;
-use tokenizer::Token;
+use crate::commands::Address;
+use crate::commands::Command;
+use crate::tokenizer::Token;
 
 fn parse_address(addr: &str) -> Result<Address, failure::Error> {
     match addr {

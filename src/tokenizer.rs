@@ -31,16 +31,16 @@ pub fn tokenize(line: &str) -> Result<Vec<Token>, failure::Error> {
     let mut res = vec![];
 
     let command_idx = line.find(|c: char| COMMANDS.contains(&c));
-    debug!("command idx: {:?}", command_idx);
+    log::debug!("command idx: {:?}", command_idx);
 
     let addr_part = match command_idx {
         None => line,
         Some(idx) => &line[0..idx],
     };
-    debug!("addr part: {:?}", addr_part);
+    log::debug!("addr part: {:?}", addr_part);
 
     let addr_separator_idx = addr_part.find(|c| [',', ';'].contains(&c));
-    debug!("addr sep idx: {:?}", addr_separator_idx);
+    log::debug!("addr sep idx: {:?}", addr_separator_idx);
 
     let rest_addr = match addr_separator_idx {
         None => addr_part,
@@ -54,7 +54,7 @@ pub fn tokenize(line: &str) -> Result<Vec<Token>, failure::Error> {
             &addr_part[idx + 1..]
         }
     };
-    debug!("rest addr: {:?}", rest_addr);
+    log::debug!("rest addr: {:?}", rest_addr);
     if !rest_addr.is_empty() {
         res.push(Token::Address(rest_addr));
     }
